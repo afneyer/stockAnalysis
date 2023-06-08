@@ -1,9 +1,11 @@
-import quandl
-
+import numpy as np
 import pandas as pd
+import quandl
 import requests
-from pandas import DataFrame, Series
 from lxml import html as HTMLParser
+from pandas import DataFrame
+
+quandl.ApiConfig.api_key = 'iYippvXT8yzS7xK47yoh'
 
 
 class MyData:
@@ -23,21 +25,43 @@ class MyData:
         [sp500_div_yield_month, quandle, 'MULTPL/SP500_DIV_YIELD_MONTH'],
         [sp500_real_price_month, quandle, 'MULTPL/SP500_REAL_PRICE_MONTH'],
         [cpi_urban_month, multpl, 'https://www.multpl.com/cpi/table/by-month'],
-        [ten_year_treasury,multpl, 'https://www.multpl.com/10-year-treasury-rate/table/by-month']
+        [ten_year_treasury, multpl, 'https://www.multpl.com/10-year-treasury-rate/table/by-month']
     ]
 
 
-def correct_dates(df):
-    # drop end of the month date if there is already a date for the first of the next month
-    df = df.drop(df.loc[df['Date'].shift(1).eq(df['Date']+pd.DateOffset(days=-1))].index)
-    # move end of the month dates to the first
-    df['Date'] = df['Date'].apply(lambda x: x+pd.DateOffset(day=1))
-
+def adjust_dates_to_start_of_month(df):
+    index_list = []
+    for index, row in df.iterrows():
+        if index < len(df) - 1:
+            next_row = df.iloc[index + 1]
+            date = row['Date']
+            next_date = next_row['Date']
+            if date.is_month_end:
+                new_date = date + pd.Timedelta(days=1)
+                if new_date == next_date:
+                    index_list.append(index)
+                else:
+                    df.replace(date, new_date, inplace=True)
+    df.drop(index_list, inplace=True)
     return df
 
-class DataImporter:
 
+def change_to_row_index(df):
+    # if date is the index change to row index
+    if type(df.index[0]) is pd.Timestamp:
+        df['Date'] = df.index
+        df['RowNum'] = np.arange(len(df))
+        df.set_index('RowNum', inplace=True)
+
+
+def restore_date_index(df):
+    if df.index.name == 'RowNum':
+        df.set_index('Date', inplace=True)
+
+
+class DataImporter:
     data_dict: DataFrame
+
     # data columns
     def __init__(self):
         self.data_dict = pd.DataFrame(MyData.urls, columns=['series', 'type', 'url'])
@@ -45,14 +69,12 @@ class DataImporter:
 
     def import_us_market(self) -> DataFrame:
         df: DataFrame
-        df = quandl.get('MULTPL/SP500_PE_RATIO_MONTH')
+        df = quandl.get('MULTPL/SP500_PE_RATIO_MONTH', )
         x = df['Value']
 
         return df
 
-    # Quandl API Key:  iYippvXT8yzS7xK47yoh
-
-    def get_data_from_quandle(self,url):
+    def get_data_from_quandle(self, url):
         df = quandl.get(url)
         return df
 
@@ -78,7 +100,7 @@ class DataImporter:
         # transform to numeric values
         # check whether the series in percentage
         if df['Value'].str.contains('%').any():
-            df['Value'] = df['Value'].str.rstrip('%').astype('float')/100.0
+            df['Value'] = df['Value'].str.rstrip('%').astype('float') / 100.0
         else:
             df['Value'] = pd.to_numeric(df['Value'])
         df = df.set_index('Date')
@@ -93,11 +115,30 @@ class DataImporter:
             if fi_type == 'quandle':
                 df = self.get_data_from_quandle(url_str)
             elif fi_type == 'multpl':
-                 df = self.get_data_from_multpl_website(url_str)
+                df = self.get_data_from_multpl_website(url_str)
             df = df.rename(columns={'Value': fi_name})
-            df = apply_specific_data_fixes(df)
+            change_to_row_index(df)
+            df = adjust_dates_to_start_of_month(df)
+            restore_date_index(df)
             print(df.dtypes)
             print(df.head)
 
+    '''
+    # The following did not work, remove eventually TODO
+    # for now it's sample code
+    def correct_dates(df):
+        raise Exception("Do not use this function, it does not work properly")
 
-
+        # drop end of the month date if there is already a date for the first of the next month
+        print(df.head)
+        d1 = df['Date'].shift(1)
+        print(d1.head)
+        d2 = df['Date'] + pd.DateOffset(days=1)
+        print(d2.head)
+        df = df.drop(df.loc[df['Date'].shift(1).eq(df['Date'] + pd.DateOffset(days=-1))].index)
+        print(df.head)
+        # move end of the month dates to the first
+        df['Date'] = df['Date'].apply(lambda x: x + pd.DateOffset(day=1))
+        df.set_index('Date', inplace=True)
+        return df
+    '''
