@@ -78,13 +78,19 @@ class TestDataImporter(TestCase):
         # assert approx(df[MyData.sp500_div_yield_month][ts], 1.56)
 
     def test_adjust_dates_to_start_of_month(self):
-        rng1 = pd.date_range('2015-04-30', periods=6, freq='M')
-        rng2 = pd.date_range('2015-05-01', periods=2, freq='MS')
+        rng1 = pd.date_range('2015-03-30', periods=10, freq='SM')
+        rng2 = pd.date_range('2015-05-01', periods=3, freq='MS')
+        rng3 = pd.date_range
         rng = rng1.union(rng2)
         df = pd.DataFrame({'Date': rng, 'Value': np.arange(0.0, len(rng), 1.0)})
+        print(df)
         df = adjust_dates_to_start_of_month(df)
-        assert len(df) == 6
-        assert (df.index == [1, 3, 4, 5, 6, 7]).all
+        print(df)
+        assert len(df) == 5
+        assert (df.index == [0, 3, 6, 9, 11]).all
+        assert approx (df['Value'],[0.0,3.0,6.0,9.0,11.0], 0.001).all
+        # check that every date is a start month date
+        assert df['Date'].apply(lambda x: x.is_month_start).all()
 
     def test_restore_date_index_and_change_to_row_index(self):
         rng1 = pd.date_range('2015-04-30', periods=6, freq='M')
