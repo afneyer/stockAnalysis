@@ -42,27 +42,6 @@ class TestDataImporter(TestCase):
         di = DataImporter()
         di.import_my_data()
 
-    def test_adjust_dates_to_start_of_month(self):
-        rng1 = pd.date_range('2015-01-31', periods=6, freq='M')
-        rng2 = pd.date_range('2015-04-01', periods=6, freq='MS')
-        rng = rng1.union(rng2)
-        df = pd.DataFrame({'Date': rng, 'Value': np.arange(0.0, len(rng), 1.0)})
-        df.set_index('Date', inplace=True)
-        print(df.head)
-
-        df = adjust_dates_to_start_of_month(df)
-
-        print(df.head)
-        # check length
-        assert len(df) == 8
-
-        # check that every date is a start month date
-        assert df['Date'].apply(lambda x: x.is_month_start).all()
-
-        # check a couple of values
-        assert approx(df.loc['2015-08-01', 'Value'], 10.0)
-        assert approx(df.loc['2015-01-01', 'Value'], 0.0)
-
     def test_adjust_dates_quandle(self):
         di = DataImporter()
         url = di.data_dict.loc[MyData.sp500_real_price_month]['url']

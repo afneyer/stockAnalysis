@@ -1,11 +1,14 @@
 from typing import Dict, List
 
+import numpy
 import numpy as np
 import pandas as pd
 import quandl
 import requests
 from lxml import html as HTMLParser
 from pandas import DataFrame
+
+import NumUtilities
 
 quandl.ApiConfig.api_key = 'iYippvXT8yzS7xK47yoh'
 
@@ -76,16 +79,20 @@ class DataImporter:
 
     data_dict: DataFrame
     # contains the list of loaded data frames accessed the name of the series
-    data_sets: List
+    all_data: DataFrame
 
     # data columns
     def __init__(self):
         self.data_dict = pd.DataFrame(MyData.urls, columns=['series', 'type', 'url'])
         self.data_dict.set_index('series',inplace=True)
-        self.data_sets = []
+        self.all_data = pd.DataFrame()
 
-    def get_data_set(self,set_name):
-        return self.data_sets[self.data_dict.index.get_loc(set_name)]
+    def get_numpy(self, set_name) -> numpy:
+        return self.all_data[set_name].to_numpy()
+
+    def get_index_values(self):
+        return self.all_data.index.values;
+
     def import_us_market(self) -> DataFrame:
         df: DataFrame
         df = quandl.get('MULTPL/SP500_PE_RATIO_MONTH', )
@@ -128,9 +135,17 @@ class DataImporter:
 
     def compute_series(self, fs_name):
         if fs_name == MyData.sp500_div_reinvest_month:
-            df_sp500 = self.get_data_set(MyData.sp500_real_price_month)
-            df_div_yield = self.get_data_set(MyData.sp500_div_yield_month)
-            return df_sp500
+            np_div_yield = self.get_numpy(MyData.sp500_div_yield_month)
+            np_sp500 = self.get_numpy(MyData.sp500_real_price_month)
+            np_div_value = np_div_yield * np_sp500 / 1200.0
+            np_tot_return = NumUtilities.total_return(np_sp500,np_div_value)
+            print(np_tot_return)
+            print(self.get_index_values())
+            df = pd.DataFrame(data=[self.get_index_values(),np_tot_return],
+                              index=['Date',MyData.sp500_div_reinvest_month]).T
+            df.set_index('Date',inplace=True)
+            print(df)
+            return(df)
 
     def import_my_data(self):
         # data_frame_list = []
@@ -149,8 +164,11 @@ class DataImporter:
             df = adjust_dates_to_start_of_month(df)
             restore_date_index(df)
             # data_frame_list.append(df)
-            self.data_sets.append(df)
-            print(self.data_sets)
+            if self.all_data.empty:
+                self.all_data = df
+            else:
+                self.all_data = pd.merge(self.all_data,df,on='Date')
+            print(self.all_data.head)
         # self.data_dict['dataFrame'] = data_frame_list
 
     '''
