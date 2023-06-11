@@ -82,3 +82,15 @@ class TestDataImporter(TestCase):
         print(df) # add validate TODO
         change_to_row_index(df)
         print(df) # add validation TODO
+
+    def test_real_gdp_quandle(self):
+        di = DataImporter()
+        url = di.data_dict.loc[MyData.us_gdp_nominal]['url']
+        df = di.get_data_from_quandle(url)
+        print(df.head)
+        # change_to_row_index(df)
+        # df = adjust_dates_to_start_of_month(df)
+        # restore_date_index(df)
+        print(df.head)
+        # col_nam = MyData.sp500_div_yield_month
+        # df = df.rename(columns={'Value': col_nam})

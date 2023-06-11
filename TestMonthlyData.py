@@ -9,10 +9,18 @@ from matplotlib import axes
 import DataPlotUtil
 import NumUtilities
 from DataFileReader import DataFileReader
+from DataImporter import DataImporter, MyData
 from NumUtilities import return_over_number_periods
 
 
 class TestMonthlyData(TestCase):
+
+    def test_sp500_total_return_basic(self):
+        di = DataImporter()
+        df = di.import_my_data()
+        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale_new(df)
+        plt.show()
+
 
     def test_plot_based_on_data_frame(self):
         df = DataFileReader().read_us_market_visualizations()
@@ -21,6 +29,47 @@ class TestMonthlyData(TestCase):
         plot = df.plot(y=['SP500+DivMonthly'], figsize=(20, 10), grid=True, logy=True)
         plot.grid('on', which='minor', axis='y')
         plt.show()
+
+    def test_plot_of_earnings_return(self):
+        di = DataImporter()
+        df = di.import_my_data()
+        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale_new(df)
+
+        label = "Earnings Reinvested"
+        tret = df[MyData.sp500_earnings_growth].squeeze().to_numpy()
+        ax.plot(df.index.values, tret, 'b', label=label)
+
+        label = "PE-Ratio"
+        pe = df[MyData.sp500_pe_ratio_month].squeeze().to_numpy()
+        ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
+        ax2.plot(df.index.values, pe, 'c', label=label)
+
+        fig.set_figheight(7)
+        fig.set_figwidth(10)
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        plt.legend()
+        plt.show()
+
+    def test_plot_of_earnings_and_dividend_yield(self):
+        di = DataImporter()
+        df = di.import_my_data()
+        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale_new(df)
+
+        label = "Earnings Yield"
+        ey = df[MyData.sp500_earnings_yield].squeeze().to_numpy()
+        ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
+        ax2.plot(df.index.values, ey, 'b', label=label)
+
+        label = "Dividend Yield"
+        ey = df[MyData.sp500_div_yield_month].squeeze().to_numpy() / 100.0
+        ax2.plot(df.index.values, ey, 'c', label=label)
+
+        fig.set_figheight(7)
+        fig.set_figwidth(10)
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        plt.legend()
+        plt.show()
+
 
     def test_monthly_data_with_60_month_return(self):
         df = DataFileReader().read_us_market_visualizations()
@@ -38,7 +87,7 @@ class TestMonthlyData(TestCase):
         ax2.plot(x1, y1, 'b', label=label)
 
         fig.tight_layout()  # otherwise the right y-label is slightly clipped
-        plt.legend()
+        plt.legend(loc='upper right')
         plt.savefig("sp500_plus_" + label + ".pdf", format="pdf", bbox_inches="tight")
         plt.show()
 
@@ -54,7 +103,8 @@ class TestMonthlyData(TestCase):
         ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
         ax2.plot(xaxis, y, 'b', label=label)
 
-        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        fig.tight_layout()
+        # otherwise the right y-label is slightly clipped
         plt.legend(loc='upper right')
         plt.savefig("sp500_plus_" + label + ".pdf", format="pdf", bbox_inches="tight")
         plt.show()

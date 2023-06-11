@@ -26,6 +26,9 @@ class MyData:
     cpi_urban_month = 'CPI_Urban_Month'
     ten_year_treasury = 'Ten_Year_Treasury'
     sp500_div_reinvest_month = 'SP500_Div_Reinvest_Month'
+    sp500_earnings_growth = 'SP500_Growth_Based_On_Earnings'
+    sp500_earnings_yield = "SP500_Earnings_Annual_Yield_Monthly"
+    us_gdp_nominal = "Nominal_US_GDP_Quarterly"
 
     urls = [
         [sp500_pe_ratio_month, quandle, 'MULTPL/SP500_PE_RATIO_MONTH'],
@@ -33,10 +36,11 @@ class MyData:
         [sp500_real_price_month, quandle, 'MULTPL/SP500_REAL_PRICE_MONTH'],
         [cpi_urban_month, multpl, 'https://www.multpl.com/cpi/table/by-month'],
         [ten_year_treasury, multpl, 'https://www.multpl.com/10-year-treasury-rate/table/by-month'],
-        [sp500_div_reinvest_month, compute, '']
+        [us_gdp_nominal,multpl,'FRED/NGDPPOT'],
+        [sp500_div_reinvest_month, compute, ''],
+        [sp500_earnings_growth, compute,''],
+        [sp500_earnings_yield, compute,'']
     ]
-
-
 
 def adjust_dates_to_start_of_month(df):
     index_list = []
@@ -147,6 +151,26 @@ class DataImporter:
             print(df)
             return(df)
 
+        if fs_name == MyData.sp500_earnings_growth:
+            np_pe = self.get_numpy(MyData.sp500_pe_ratio_month)
+            np_sp500 = self.get_numpy(MyData.sp500_real_price_month)
+            np_earnings_yield = np.reciprocal(np_pe) / 12.0
+            np.savetxt("Earnings Yield.txt",np_earnings_yield)
+            sp500_start = np_sp500[0]
+            np_tot_earn_ret = NumUtilities.yield_return(sp500_start,np_earnings_yield)
+            df = pd.DataFrame(data=[self.get_index_values(), np_tot_earn_ret],
+                              index=['Date', MyData.sp500_earnings_growth]).T
+            df.set_index('Date', inplace=True)
+            return df
+
+        if fs_name == MyData.sp500_earnings_yield:
+            np_pe = self.get_numpy(MyData.sp500_pe_ratio_month)
+            np_earnings_yield = np.reciprocal(np_pe)
+            df = pd.DataFrame(data=[self.get_index_values(), np_earnings_yield],
+                              index=['Date', MyData.sp500_earnings_yield]).T
+            df.set_index('Date', inplace=True)
+            return df
+
     def import_my_data(self):
         # data_frame_list = []
         for url in MyData.urls:
@@ -169,8 +193,11 @@ class DataImporter:
             else:
                 self.all_data = pd.merge(self.all_data,df,on='Date')
             print(self.all_data.head)
-        # self.data_dict['dataFrame'] = data_frame_list
+            np.savetxt(fs_name+'.txt',df.values)
+        return self.all_data
 
+    def get_all_data(self):
+        return self.all_data
     '''
     # The following did not work, remove eventually TODO
     # for now it's sample code
