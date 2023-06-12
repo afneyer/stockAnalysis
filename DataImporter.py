@@ -36,13 +36,14 @@ class MyData:
         [sp500_real_price_month, quandle, 'MULTPL/SP500_REAL_PRICE_MONTH'],
         [cpi_urban_month, multpl, 'https://www.multpl.com/cpi/table/by-month'],
         [ten_year_treasury, multpl, 'https://www.multpl.com/10-year-treasury-rate/table/by-month'],
-        [us_gdp_nominal,multpl,'FRED/NGDPPOT'],
+        [us_gdp_nominal,quandle,'FRED/GDP'],
         [sp500_div_reinvest_month, compute, ''],
         [sp500_earnings_growth, compute,''],
         [sp500_earnings_yield, compute,'']
     ]
 
 def adjust_dates_to_start_of_month(df):
+    change_to_row_index(df)
     index_list = []
     for index, row in df.iterrows():
         if index < len(df) - 1:
@@ -61,6 +62,7 @@ def adjust_dates_to_start_of_month(df):
             if not row['Date'].is_month_start:
                 index_list.append(index)
     df.drop(index_list, inplace=True)
+    restore_date_index(df)
     return df
 
 
@@ -77,6 +79,21 @@ def restore_date_index(df):
     if len(df) >0:
         if df.index.name == 'RowNum':
             df.set_index('Date', inplace=True)
+
+
+def adjust_sequence(id,df):
+    if id == MyData.us_gdp_nominal:
+        # add additional data points and use cubit spline interpolation to set data
+        df1 = df.asfreq('MS')
+        df2 = df1.interpolate(method='cubicspline')
+        return df2
+    elif id == MyData.sp500_div_yield_month:
+        return adjust_dates_to_start_of_month()
+    elif id == MyData.sp500_real_price_month:
+        return adjust_dates_to_start_of_month()
+    else:
+        return df
+
 
 
 class DataImporter:
@@ -177,6 +194,7 @@ class DataImporter:
             fs_name = url[0]
             fs_type = url[1]
             url_str = url[2]
+            print("---Importing: " + fs_name)
             if fs_type == 'quandle':
                 df = self.get_data_from_quandle(url_str)
             elif fs_type == 'multpl':
@@ -184,36 +202,29 @@ class DataImporter:
             elif fs_type == 'compute':
                 df = self.compute_series(fs_name)
             df = df.rename(columns={'Value': fs_name})
-            change_to_row_index(df)
-            df = adjust_dates_to_start_of_month(df)
-            restore_date_index(df)
-            # data_frame_list.append(df)
+
+            # make adjustment for specific data series
+            df = adjust_sequence(id,df)
+
+            # add to the all_data frame
             if self.all_data.empty:
                 self.all_data = df
             else:
-                self.all_data = pd.merge(self.all_data,df,on='Date')
+                self.all_data = pd.merge(self.all_data,df,on='Date',how='outer')
             print(self.all_data.head)
             np.savetxt(fs_name+'.txt',df.values)
         return self.all_data
 
+    def import_all_data(self,id_list):
+        for id in id_list:
+            url = MyData.urls
+
     def get_all_data(self):
         return self.all_data
-    '''
-    # The following did not work, remove eventually TODO
-    # for now it's sample code
-    def correct_dates(df):
-        raise Exception("Do not use this function, it does not work properly")
 
-        # drop end of the month date if there is already a date for the first of the next month
-        print(df.head)
-        d1 = df['Date'].shift(1)
-        print(d1.head)
-        d2 = df['Date'] + pd.DateOffset(days=1)
-        print(d2.head)
-        df = df.drop(df.loc[df['Date'].shift(1).eq(df['Date'] + pd.DateOffset(days=-1))].index)
-        print(df.head)
-        # move end of the month dates to the first
-        df['Date'] = df['Date'].apply(lambda x: x + pd.DateOffset(day=1))
-        df.set_index('Date', inplace=True)
-        return df
-    '''
+    def get_url(self,id):
+        return self.data_dict['url'].get(id)
+
+    def get_url_type(self,id):
+        return self.data_dict['type'].get(id)
+

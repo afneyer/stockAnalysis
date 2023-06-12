@@ -44,12 +44,10 @@ class TestDataImporter(TestCase):
 
     def test_adjust_dates_quandle(self):
         di = DataImporter()
-        url = di.data_dict.loc[MyData.sp500_real_price_month]['url']
+        url = di.data_dict.loc[MyData.sp500_div_yield_month]['url']
         df = di.get_data_from_quandle(url)
         print(df.head)
-        change_to_row_index(df)
         df = adjust_dates_to_start_of_month(df)
-        restore_date_index(df)
         print(df.head)
         col_nam = MyData.sp500_div_yield_month
         df = df.rename(columns={'Value': col_nam})
@@ -67,7 +65,7 @@ class TestDataImporter(TestCase):
         print(df)
         assert len(df) == 5
         assert (df.index == [0, 3, 6, 9, 11]).all
-        assert approx (df['Value'],[0.0,3.0,6.0,9.0,11.0], 0.001).all
+        assert approx(df['Value'], [0.0, 3.0, 6.0, 9.0, 11.0], 0.001).all
         # check that every date is a start month date
         assert df['Date'].apply(lambda x: x.is_month_start).all()
 
@@ -79,18 +77,36 @@ class TestDataImporter(TestCase):
         df.index.name = 'RowNum'
         print(df)
         restore_date_index(df)
-        print(df) # add validate TODO
+        print(df)  # add validate TODO
         change_to_row_index(df)
-        print(df) # add validation TODO
+        print(df)  # add validation TODO
 
     def test_real_gdp_quandle(self):
         di = DataImporter()
         url = di.data_dict.loc[MyData.us_gdp_nominal]['url']
         df = di.get_data_from_quandle(url)
-        print(df.head)
+        df2 = df.asfreq('MS')
+        df_new = df2.interpolate(method='cubicspline')
+        print(df_new.head)
         # change_to_row_index(df)
         # df = adjust_dates_to_start_of_month(df)
         # restore_date_index(df)
         print(df.head)
         # col_nam = MyData.sp500_div_yield_month
         # df = df.rename(columns={'Value': col_nam})
+
+    def test_div_reinvest(self):
+        di = DataImporter()
+        url = id.data_dict_.log[MyData.sp500_div_reinvest_month]
+
+    def test_get_url(self):
+        ser_id = MyData.sp500_div_yield_month
+        di = DataImporter()
+        url = di.get_url(ser_id)
+        assert url == 'MULTPL/SP500_DIV_YIELD_MONTH'
+
+    def test_get_url_type(self):
+        ser_id = MyData.sp500_div_yield_month
+        di = DataImporter()
+        url = di.get_url_type(ser_id)
+        assert url == MyData.quandle

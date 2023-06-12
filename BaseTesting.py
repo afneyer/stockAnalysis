@@ -23,7 +23,7 @@ class MyTestCase(unittest.TestCase):
         print(df)
 
 
-    def test_merg_of_dataframes(self):
+    def test_merge_of_dataframes(self):
         data = {'Key': [2, 3, 4], 'Value': ['B', 'C', 'D']}
         df1 = pd.DataFrame(data)
         df1.set_index('Key',inplace=True)
@@ -84,7 +84,7 @@ class MyTestCase(unittest.TestCase):
         # df.set_index('Date')
         df2 = df.asfreq('MS')
         df_new = df2.interpolate(method='cubicspline')
-        df_new.rename(columns={'Value': 'Value_New'},inplace=True)
+        df_new.rename(columns={'Value': 'Value_New'},inplace=True) # needed for merging
         df_both = pd.merge(df_new,df,on='Date',how='outer',sort=True)
 
         # use bc_type = 'natural' add the constraint straight lines at the end point
