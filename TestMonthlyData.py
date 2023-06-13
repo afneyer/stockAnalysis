@@ -17,7 +17,7 @@ class TestMonthlyData(TestCase):
 
     def test_sp500_total_return_basic(self):
         di = DataImporter()
-        df = di.import_my_data()
+        df = di.import_all_series()
         fig, ax = DataPlotUtil.plot_sp500_monthly_logscale_new(df)
         plt.show()
 
@@ -32,7 +32,7 @@ class TestMonthlyData(TestCase):
 
     def test_plot_of_earnings_return(self):
         di = DataImporter()
-        df = di.import_my_data()
+        df = di.import_all_series()
         fig, ax = DataPlotUtil.plot_sp500_monthly_logscale_new(df)
 
         label = "Earnings Reinvested"
@@ -52,7 +52,7 @@ class TestMonthlyData(TestCase):
 
     def test_plot_of_earnings_and_dividend_yield(self):
         di = DataImporter()
-        df = di.import_my_data()
+        df = di.import_all_series()
         fig, ax = DataPlotUtil.plot_sp500_monthly_logscale_new(df)
 
         label = "Earnings Yield"
@@ -144,33 +144,4 @@ class TestMonthlyData(TestCase):
 
 
 
-'''
-    s1 = df['TotalMonthlyReturn'].squeeze()
-    s2 = df['10-YearTreasury'].squeeze()
 
-    s1 = s1[1:1800]
-    s2 = s2[1:1800]
-    x = s1.to_numpy()
-    y = s2.to_numpy()
-
-    # Scatter plot of Sp+Div Monthly versus Treasury Yield
-    plt.scatter(x, y)
-    plt.show()
-
-
-    # Cross Correlation SP500+Total Return and Treasuries
-    plt.xcorr(x, y, usevlines=True, normed=True, maxlags=800)
-    plt.title("Cross Correlation of Total Monthly Return and 10-Year Treasury")
-    plt.show()
-
-    plt.acorr(x, usevlines=True, normed=True, maxlags=800)
-    plt.show()
-
-    plt.acorr(y, usevlines=True, normed=True, maxlags=800)
-    plt.show()
-'''
-
-'''
-if __name__ == '__main__':
-    unittest.main()
-'''
