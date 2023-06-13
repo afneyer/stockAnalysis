@@ -64,15 +64,13 @@ class TestDataImporter(TestCase):
 
     def test_adjust_dates_quandle(self):
         di = DataImporter()
-        url = di.data_dict.loc[MyData.sp500_div_yield_month]['url']
+        col_nam = MyData.sp500_div_yield_month
+        url = di.get_url(col_nam)
         df = di.get_data_from_quandle(url)
         print(df.head)
         df = adjust_dates_to_start_of_month(df)
+        assert all_dates_month_start(df)
         print(df.head)
-        col_nam = MyData.sp500_div_yield_month
-        df = df.rename(columns={'Value': col_nam})
-        # ts = pd.Timestamp('2022-8-31')
-        # assert approx(df[MyData.sp500_div_yield_month][ts], 1.56)
 
     def test_adjust_dates_to_start_of_month(self):
         rng1 = pd.date_range('2015-03-30', periods=10, freq='SM')
@@ -103,21 +101,12 @@ class TestDataImporter(TestCase):
 
     def test_real_gdp_quandle(self):
         di = DataImporter()
-        url = di.data_dict.loc[MyData.us_gdp_nominal]['url']
+        url = di.get_url(MyData.us_gdp_nominal)
         df = di.get_data_from_quandle(url)
         df2 = df.asfreq('MS')
         df_new = df2.interpolate(method='cubicspline')
         print(df_new.head)
-        # change_to_row_index(df)
-        # df = adjust_dates_to_start_of_month(df)
-        # restore_date_index(df)
         print(df.head)
-        # col_nam = MyData.sp500_div_yield_month
-        # df = df.rename(columns={'Value': col_nam})
-
-    def test_div_reinvest(self):
-        di = DataImporter()
-        url = id.data_dict_.log[MyData.sp500_div_reinvest_month]
 
     def test_get_url(self):
         ser_id = MyData.sp500_div_yield_month
@@ -179,10 +168,25 @@ class TestDataImporter(TestCase):
         assert value > 23202
 
     def test_sp500_div_reinvest_month(self):
-        di = DataImporter()
-        df = di.import_series(MyData.sp500_div_reinvest_month)
+        series_id = MyData.sp500_div_reinvest_month
+        df = DataImporter().import_series(series_id)
         print(df.head)
         assert all_dates_month_start(df)
+        assert_value(df, series_id, '2022-12-01', 2552332)
+
+    def test_sp500_earnings_growth(self):
+        series_id = MyData.sp500_earnings_growth
+        df = DataImporter().import_series(series_id)
+        print(df.head)
+        assert all_dates_month_start(df)
+        assert_value(df, series_id, '2022-12-01', 269655.4)
+
+    def test_sp500_earnings_yield(self):
+        series_id = MyData.sp500_earnings_yield
+        df = DataImporter().import_series(series_id)
+        print(df.head)
+        assert all_dates_month_start(df)
+        assert_value(df, series_id, '2022-12-01', 0.04415)
 
 
 
