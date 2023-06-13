@@ -170,7 +170,7 @@ class DataImporter:
         if fs_name == MyData.sp500_div_reinvest_month:
             np_div_yield = self.get_numpy(MyData.sp500_div_yield_month)
             np_sp500 = self.get_numpy(MyData.sp500_real_price_month)
-            np_div_value = np_div_yield * np_sp500 / 1200.0
+            np_div_value = np_div_yield * np_sp500 / 12.0
             np_tot_return = NumUtilities.total_return(np_sp500, np_div_value)
             print(np_tot_return)
             print(self.get_index_values())
