@@ -5,10 +5,11 @@ from pandas import DataFrame
 class DataFileReader:
 
     def read_us_market_visualizations(self) -> DataFrame:
-        with open("USMarketVisualizations.csv") as f:
+        datafile = "./inputdata/USMarketVisualizations.csv"
+        with open(datafile) as f:
             print(f.readline())
 
-        df = pd.read_csv("USMarketVisualizations.csv",
+        df = pd.read_csv(datafile,
                          sep=',',
                          header='infer',
                          parse_dates=['FullDate'],

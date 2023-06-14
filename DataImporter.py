@@ -201,7 +201,8 @@ class DataImporter:
             return df
 
     def import_all_series(self):
-        id_list = self.__data_dict.keys()
+        id_list = self.__data_dict.index
+        self.import_selected_series(id_list)
         return self.__all_data
 
     def import_selected_series(self, id_list):
