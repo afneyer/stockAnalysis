@@ -142,6 +142,39 @@ class TestMonthlyData(TestCase):
         plt.savefig("sp500_plus_" + label + ".pdf", format="pdf", bbox_inches="tight")
         plt.show()
 
+    def test_SP500_and_GDP_percent_increase(self):
+        di = DataImporter()
+        df = di.import_series(MyData.sp500_div_reinvest_month)
+        df = di.import_series(MyData.us_gdp_nominal)
+
+        start = df[MyData.us_gdp_nominal].first_valid_index()
+        df = df.loc[start:]
+
+        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(df)
+        xaxis = df.index.values
+
+        sp500_percent_inc = df[MyData.sp500_div_reinvest_month].pct_change()
+        print(len(df))
+        y1 = NumUtilities.moving_average(sp500_percent_inc, 36)
+        gdp_percent_inc = df[MyData.us_gdp_nominal].pct_change()
+        print(len(df))
+        y2 = NumUtilities.moving_average(gdp_percent_inc, 36)
+        xaxis = xaxis[36:]
+
+        ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
+        label = "SP500 Percent Increase to Previous Month"
+        ax2.plot(xaxis, y1, 'b', label=label, linewidth=1.0, linestyle='-', ms=1)
+
+        label = "GDB Percent Increase to Previous Month"
+        ax2.plot(xaxis, y2, 'c', label=label, linewidth=1.0, linestyle='-', ms=1)
+
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        fig.set_figheight(7.5)
+        fig.set_figwidth(10)
+        plt.legend(loc='upper right')
+        plt.savefig("sp500_plus_" + label + ".pdf", format="pdf", bbox_inches="tight")
+        plt.show()
+
 
 
 

@@ -25,8 +25,8 @@ def total_return(price: ndarray, div: ndarray) -> numpy:
     """
 
     # Calculate the daily Total Return.
-    p1 = np.roll(price,1)
-    tot_ret_per_period = (price+div) / p1
+    p1 = np.roll(price, 1)
+    tot_ret_per_period = (price + div) / p1
 
     # Replace the first row's NA with 1.0
     tot_ret_per_period[0] = price[0]
@@ -36,15 +36,40 @@ def total_return(price: ndarray, div: ndarray) -> numpy:
 
     return tot_ret
 
-def yield_return(initial: float, yield_percent: ndarray) -> numpy:
 
+def yield_return(initial: float, yield_percent: ndarray) -> numpy:
     y_ret = np.zeros_like(yield_percent)
     idx = 0
     for yp in yield_percent:
-        if idx ==0:
+        if idx == 0:
             y_ret[idx] = initial
         else:
-            y_ret[idx] = y_ret[idx-1]*(1.0+yield_percent[idx])
+            y_ret[idx] = y_ret[idx - 1] * (1.0 + yield_percent[idx])
         idx += 1
 
     return y_ret
+
+
+def moving_average(x: ndarray, n: int) -> numpy:
+    x1 = replace_leading_nan(x,0.0)
+
+    # use numpy.cumsum
+    x1 = np.insert(x1,0,0)
+    cumsum_vec = np.cumsum(x1)
+    y = (cumsum_vec[n:] - cumsum_vec[:-n]) / n
+    return y
+
+def first_non_nan(x: ndarray) -> int:
+    non_nan_indices = np.where(~np.isnan(x))[0]
+    first_non_nan = non_nan_indices[0]
+    return first_non_nan
+
+def replace_leading_nan(x: ndarray, value: float) -> ndarray:
+    f_non_nan = first_non_nan(x)
+    if f_non_nan > 0:
+        x1 = np.full(f_non_nan-1,0.0)
+    else:
+        return x
+    x2 = x[f_non_nan:]
+    y = numpy.concatenate((x1,x2))
+    return y

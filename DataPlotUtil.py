@@ -11,8 +11,9 @@ from NumUtilities import return_over_number_periods
 
 
 def plot_sp500_monthly_logscale(df: DataFrame):  # -> Tuple[figure, axes]:
-    y = df['SP500+DivMonthly'].squeeze().to_numpy()
-    x = df['index'].to_numpy().astype(float)
+    y = df[MyData.sp500_div_reinvest_month].squeeze().astype(float).to_numpy()
+    dates = df.index.values
+    x = dates.astype(float)
 
     # print(np.where(~np.isfinite(x)))
     # print(np.where(~np.isfinite(y)))
@@ -25,7 +26,7 @@ def plot_sp500_monthly_logscale(df: DataFrame):  # -> Tuple[figure, axes]:
     y_fitted = a * np.exp(b * x)
 
     # Using Matplotlib for plotting
-    xaxis = df['FullDate'].to_numpy()
+    xaxis = dates
 
     # set the graph parameters
     ax1: axes
