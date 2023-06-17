@@ -2,8 +2,13 @@ import unittest
 
 import numpy as np
 import pandas as pd
+import yfinance as yf
+import pandas_datareader as pdr
+import datetime as dt
 from matplotlib import pyplot as plt
 from scipy.interpolate import CubicSpline
+
+
 
 
 class MyTestCase(unittest.TestCase):
@@ -101,3 +106,15 @@ class MyTestCase(unittest.TestCase):
         plt.xlabel('x')
         plt.ylabel('y')
         plt.show()
+
+    def test_reading_data_from_yahoo_SPY(self):
+
+        ticker = 'SPY'
+        start = dt.datetime(2000, 1, 1)
+        end = dt.date.today()
+        all_data = yf.Ticker('SPY')
+        t_hist = all_data.history(period='max')
+        t_div = all_data.dividends
+        t_cap = all_data.capital_gains
+
+        print(t_cap)

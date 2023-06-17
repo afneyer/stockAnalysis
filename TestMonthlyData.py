@@ -155,11 +155,12 @@ class TestMonthlyData(TestCase):
 
         sp500_percent_inc = df[MyData.sp500_div_reinvest_month].pct_change()
         print(len(df))
-        y1 = NumUtilities.moving_average(sp500_percent_inc, 36)
+        n = 1
+        y1 = NumUtilities.moving_average(sp500_percent_inc, n)
         gdp_percent_inc = df[MyData.us_gdp_nominal].pct_change()
         print(len(df))
-        y2 = NumUtilities.moving_average(gdp_percent_inc, 36)
-        xaxis = xaxis[36:]
+        y2 = NumUtilities.moving_average(gdp_percent_inc, n)
+        xaxis = xaxis[n:]
 
         ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
         label = "SP500 Percent Increase to Previous Month"
@@ -173,6 +174,10 @@ class TestMonthlyData(TestCase):
         fig.set_figwidth(10)
         plt.legend(loc='upper right')
         plt.savefig("sp500_plus_" + label + ".pdf", format="pdf", bbox_inches="tight")
+        plt.show()
+
+        plt.xcorr(y1, y2, usevlines=True, normed=True, maxlags=60)
+        plt.title("Cross Correlation of Total Monthly Return and 10-Year Treasury")
         plt.show()
 
 

@@ -18,7 +18,7 @@ def assert_value(df: DataFrame, df_column: str, date: str, val: float):
     ts = pd.Timestamp(date)
     assert approx(df[df_column][ts], val)
 
-
+# TODO assert all data points continguous, nan only in the beginning and end 
 class TestDataImporter(TestCase):
 
     def test_constructor(self):

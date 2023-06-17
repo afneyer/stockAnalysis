@@ -51,6 +51,8 @@ def yield_return(initial: float, yield_percent: ndarray) -> numpy:
 
 
 def moving_average(x: ndarray, n: int) -> numpy:
+    if n == 0:
+        return x
     x1 = replace_leading_nan(x,0.0)
 
     # use numpy.cumsum

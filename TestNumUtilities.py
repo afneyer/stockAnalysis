@@ -24,16 +24,25 @@ class MyTestCase(unittest.TestCase):
         assert_almost_equal(yout,[1.0,1.1,1.21])
 
     def test_moving_average(self):
+        # basic example
         x = [1.0,1.1,1.2,1.3,1.4,1.5]
         y = moving_average(x,3)
         print(y)
         assert approx(y,[1.1,1.2,1.3,1.4]).all()
 
+        # examples with nan
         x.append(np.nan)
         print(x)
         y = moving_average(x,3)
         assert approx(y[:4],[1.1,1.2,1.3,1.4]).all()
         assert np.isnan(y[4])
+
+    def test_moving_average_of_zero(self):
+        # moving average of 0
+        x = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+        y = moving_average(x, 0)
+        print(y)
+        assert approx(y, x).all()
 
     def test_first_non_nan(self):
         x = [numpy.NaN, numpy.NaN, numpy.NaN, 1.0, 1.2, 1.3, 1.4, 1.5, numpy.NaN, numpy.NaN]
