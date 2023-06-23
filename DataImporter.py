@@ -2,6 +2,7 @@ import fredapi as fa
 import numpy
 import numpy as np
 import pandas as pd
+import yfinance as yf
 import quandl
 import requests
 from IPython.core.display_functions import display
@@ -9,6 +10,7 @@ from lxml import html as HTMLParser
 from pandas import DataFrame, Series
 
 import NumUtilities
+from DfUtil import scale_to_start_value
 from MyData import MyData
 
 # API keys
@@ -53,25 +55,6 @@ def restore_date_index(df):
     if len(df) > 0:
         if df.index.name == 'RowNum':
             df.set_index('Date', inplace=True)
-
-
-def adjust_sequence(fs_id, df):
-    if fs_id == MyData.sp500_pe_ratio_month:
-        return adjust_dates_to_start_of_month(df)
-    elif fs_id == MyData.us_gdp_nominal:
-        # add additional data points and use cubit spline interpolation to set data
-        df1 = df.asfreq('MS')
-        df2 = df1.interpolate(method='cubicspline')
-        return df2
-    elif fs_id == MyData.sp500_div_yield_month:
-        df[MyData.sp500_div_yield_month] = df[MyData.sp500_div_yield_month] / 100.0
-        return adjust_dates_to_start_of_month(df)
-    elif fs_id == MyData.sp500_real_price_month:
-        return adjust_dates_to_start_of_month(df)
-    elif fs_id == MyData.ten_year_treasury_month:
-        return adjust_dates_to_start_of_month(df)
-    else:
-        return df
 
 
 def print_df(df: DataFrame, descript: str = 'No Description') -> None:
@@ -123,12 +106,14 @@ class DataImporter:
                 df1 = self.get_series_as_df(fs_id)
                 if df.empty:
                     df = df1
+                    print('---Setting initial df before merging')
+                    print_df(df)
                 else:
                     print('---Merging df with ' + fs_id)
-                    # print_df(df,'Base Dataframe')
-                    # print_df(df1,'Merging Dataframe')
-                    df = pd.merge(df, df1, on='Date', how='outer')
-                    # print(df)
+                    print_df(df,'Base Dataframe')
+                    print_df(df1,'Merging Dataframe')
+                    df = pd.merge(df, df1, left_index=True, right_index=True, how='outer')
+                    print(df)
 
         return df
 
@@ -177,6 +162,33 @@ class DataImporter:
         df.index.name = 'Date'
         return df
 
+    def get_total_return_from_yahoo(self, url):
+        'for yahoo the url is the ticker'
+        df = pd.DataFrame()
+
+        all_data = yf.Ticker(url)
+        hist = all_data.history(period='max', interval='1d')
+        price = hist['Close']
+        div = hist['Dividends']
+        cap = hist['Capital Gains']
+        total_div = (div + cap).squeeze().to_numpy()
+        price = price.squeeze().to_numpy()
+        tot_ret = NumUtilities.total_return(price, total_div)
+        columns = ['Date', 'Value']
+        data = np.array([hist['Close'].index, tot_ret]).T
+        df_ticker = pd.DataFrame(data, columns=columns)
+        df_ticker.set_index('Date', inplace=True)
+        # print(df_ticker)
+        if df.empty:
+            df = df_ticker
+        else:
+            df = df.merge(df_ticker, how='inner', on='Date')
+        restore_date_index(df)
+        print(df)
+        scale_to_start_value(df)
+        print(df)
+        return df
+
     def compute_series(self, fs_id):
         # create a df of the dependant series to align the series
         if fs_id == MyData.sp500_div_reinvest_month:
@@ -219,11 +231,6 @@ class DataImporter:
             print(df.dtypes)
             return df
 
-    def import_all_series(self):
-        id_list = self.__data_dict.index
-        self.get_selected_series_as_df(id_list)
-        return self.__all_data
-
     def __import_series(self, fs_id):
 
         # import the series based on the type/source of series
@@ -239,27 +246,50 @@ class DataImporter:
         elif fs_type == MyData.fred:
             print("---Importing from " + MyData.fred, fs_id)
             df = self.get_data_from_fred(url_str)
+        elif fs_type == MyData.yahoo:
+            print("---Importing from " + MyData.yahoo, fs_id)
+            df = self.get_total_return_from_yahoo(url_str)
         elif fs_type == 'compute':
             print("---Computing Series: ", fs_id)
             df = self.compute_series(fs_id)
         df = df.rename(columns={'Value': fs_id})
 
         # make adjustment for specific data series
-        df = adjust_sequence(fs_id, df)
+        df = self.adjust_sequence(fs_id, df)
 
         # save the sequence in a text file
         df.to_csv(fs_id + ".csv")
         # add to the all_data frame
         self.__series_list[fs_id] = df
-        # TODO remove __all_data
-        '''
-        if self.__all_data.empty:
-            self.__all_data = df
-        else:
-            self.__all_data = pd.merge(self.__all_data, df, on='Date', how='outer')
-        print(self.__all_data.head)
-        '''
+
         return df
+
+    def adjust_sequence(self, fs_id, df):
+
+        # adjustments based on general criteria
+        if self.get_url_type(fs_id) == MyData.yahoo:
+            df = df.astype({fs_id: float})
+            df1 = df.asfreq('D')
+            df = df1.interpolate(method='cubicspline')
+
+
+        # adjustments based on specific series
+        if fs_id == MyData.sp500_pe_ratio_month:
+            return adjust_dates_to_start_of_month(df)
+        elif fs_id == MyData.us_gdp_nominal:
+            # add additional data points and use cubit spline interpolation to set data
+            df1 = df.asfreq('MS')
+            df2 = df1.interpolate(method='cubicspline')
+            return df2
+        elif fs_id == MyData.sp500_div_yield_month:
+            df[MyData.sp500_div_yield_month] = df[MyData.sp500_div_yield_month] / 100.0
+            return adjust_dates_to_start_of_month(df)
+        elif fs_id == MyData.sp500_real_price_month:
+            return adjust_dates_to_start_of_month(df)
+        elif fs_id == MyData.ten_year_treasury_month:
+            return adjust_dates_to_start_of_month(df)
+        else:
+            return df
 
     def get_url(self, fs_id):
         return self.__data_dict['url'].get(fs_id)

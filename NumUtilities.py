@@ -39,7 +39,7 @@ def total_return(price: ndarray, div: ndarray) -> numpy:
 
 def yield_return(initial: float, yield_percent: ndarray) -> numpy:
     y_ret = np.zeros_like(yield_percent)
-    for (yp,idx) in yield_percent:
+    for (yield_percent,idx) in yield_percent:
         if idx == 0:
             y_ret[idx] = initial
         else:

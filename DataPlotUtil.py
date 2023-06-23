@@ -11,9 +11,9 @@ from MyData import MyData
 from NumUtilities import return_over_number_periods
 
 
-def plot_sp500_monthly_logscale(di: DataImporter):  # -> Tuple[figure, axes]:
-    fs: Series = di.get_series_as_series(MyData.sp500_div_reinvest_month)
-    y = di.get_series_as_numpy(MyData.sp500_div_reinvest_month).astype(float)
+def plot_sp500_monthly_logscale(di: DataImporter, fs_id):  # -> Tuple[figure, axes]:
+    fs: Series = di.get_series_as_series(fs_id)
+    y = di.get_series_as_numpy(fs_id).astype(float)
     dates = fs.index.values
     x = dates.astype(float)
 

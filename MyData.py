@@ -4,6 +4,7 @@ class MyData:
     multpl = 'multpl'
     compute = 'compute'
     fred = 'FRED'
+    yahoo = 'yahoo'
 
     # define all data series ids
     sp500_pe_ratio_month = 'SP500_PE_Ratio_Month'
@@ -24,6 +25,7 @@ class MyData:
     int_five_year_cm = "5-Year Treasury Constant Maturity"
     int_ten_year_cm = "10-Year Treasury Constant Maturity"
     int_thirty_year_cm = "30-Year Treasury Constant Maturity"
+    sp500_div_reinvest_day = "SP500 Dividends Reinvested Daily"
 
     urls = [
         [sp500_pe_ratio_month, quandle, 'MULTPL/SP500_PE_RATIO_MONTH'],
@@ -41,8 +43,10 @@ class MyData:
         [int_five_year_cm, fred, 'DGS5'],
         [int_ten_year_cm, fred, 'DGS10'],
         [int_thirty_year_cm, fred, 'DGS30'],
+        [sp500_div_reinvest_day, yahoo, 'spy'],
         # for computed ids the url is a list of dependencies (i.e. a list of data series ids)
         [sp500_div_reinvest_month, compute, [sp500_real_price_month, sp500_div_yield_month]],
         [sp500_earnings_growth, compute, [sp500_pe_ratio_month, sp500_real_price_month]],
-        [sp500_earnings_yield, compute, [sp500_pe_ratio_month, sp500_real_price_month]]
+        [sp500_earnings_yield, compute, [sp500_pe_ratio_month, sp500_real_price_month]],
+
     ]

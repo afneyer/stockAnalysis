@@ -215,6 +215,10 @@ class TestDataImporter(TestCase):
         df.to_csv('./printouts/interest_rates.csv')
         print(df.head)
 
+    def test_sp500_div_reinvest_day(self):
+        series_id = md.sp500_div_reinvest_day
+        df = DataImporter().get_series_as_df(series_id)
+        print(df.head)
     # test al data importer functions
     def test_all_dates_daily(self):
         df = DataImporter().get_series_as_df(md.int_two_year_cm)
