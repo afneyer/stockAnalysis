@@ -18,23 +18,23 @@ class MyTestCase(unittest.TestCase):
         assert_almost_equal(yout, np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1]))
 
     def test_yield_return(self):
-        x = np.array([0.1,0.1,0.1])
+        x = np.array([0.1, 0.1, 0.1])
         initial = 1.0
-        yout = yield_return(initial,x)
-        assert_almost_equal(yout,[1.0,1.1,1.21])
+        yout = yield_return(initial, x)
+        assert_almost_equal(yout, [1.0, 1.1, 1.21])
 
     def test_moving_average(self):
         # basic example
-        x = [1.0,1.1,1.2,1.3,1.4,1.5]
-        y = moving_average(x,3)
+        x = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+        y = moving_average(x, 3)
         print(y)
-        assert approx(y,[1.1,1.2,1.3,1.4]).all()
+        assert approx(y, [1.1, 1.2, 1.3, 1.4]).all()
 
         # examples with nan
         x.append(np.nan)
         print(x)
-        y = moving_average(x,3)
-        assert approx(y[:4],[1.1,1.2,1.3,1.4]).all()
+        y = moving_average(x, 3)
+        assert approx(y[:4], [1.1, 1.2, 1.3, 1.4]).all()
         assert np.isnan(y[4])
 
     def test_moving_average_of_zero(self):
@@ -51,10 +51,9 @@ class MyTestCase(unittest.TestCase):
 
     def test_replace_leading_nan(self):
         x = [numpy.NaN, numpy.NaN, numpy.NaN, 1.0, 1.2, 1.3, 1.4, 1.5, numpy.NaN, numpy.NaN]
-        y = replace_leading_nan(x,0.0)
-        assert_almost_equal(y, [0.,  0.,  1.,  1.2, 1.3, 1.4, 1.5, numpy.NaN, numpy.NaN])
+        y = replace_leading_nan(x, 0.1)
+        assert_almost_equal(y, [0.1, 0.1, 0.1, 1.0, 1.2, 1.3, 1.4, 1.5, numpy.NaN, numpy.NaN])
         print(y)
-
 
 
 if __name__ == '__main__':

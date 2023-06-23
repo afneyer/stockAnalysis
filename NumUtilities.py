@@ -39,8 +39,7 @@ def total_return(price: ndarray, div: ndarray) -> numpy:
 
 def yield_return(initial: float, yield_percent: ndarray) -> numpy:
     y_ret = np.zeros_like(yield_percent)
-    idx = 0
-    for yp in yield_percent:
+    for (yp,idx) in yield_percent:
         if idx == 0:
             y_ret[idx] = initial
         else:
@@ -53,25 +52,27 @@ def yield_return(initial: float, yield_percent: ndarray) -> numpy:
 def moving_average(x: ndarray, n: int) -> numpy:
     if n == 0:
         return x
-    x1 = replace_leading_nan(x,0.0)
+    x1 = replace_leading_nan(x, 0.0)
 
     # use numpy.cumsum
-    x1 = np.insert(x1,0,0)
+    x1 = np.insert(x1, 0, 0)
     cumsum_vec = np.cumsum(x1)
     y = (cumsum_vec[n:] - cumsum_vec[:-n]) / n
     return y
 
+
 def first_non_nan(x: ndarray) -> int:
     non_nan_indices = np.where(~np.isnan(x))[0]
-    first_non_nan = non_nan_indices[0]
-    return first_non_nan
+    f_non_nan = non_nan_indices[0]
+    return f_non_nan
 
-def replace_leading_nan(x: ndarray, value: float) -> ndarray:
+
+def replace_leading_nan(x: ndarray, value: float = 0.0) -> ndarray:
     f_non_nan = first_non_nan(x)
     if f_non_nan > 0:
-        x1 = np.full(f_non_nan-1,0.0)
+        x1 = np.full(f_non_nan, value)
     else:
         return x
     x2 = x[f_non_nan:]
-    y = numpy.concatenate((x1,x2))
+    y = numpy.concatenate((x1, x2))
     return y

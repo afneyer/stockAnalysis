@@ -18,6 +18,7 @@ def assert_value(df: DataFrame, df_column: str, date: str, val: float):
     else:
         print('--> Value Error: Target =' + str(val) + ' Actual=' + str(df[df_column][ts]))
 
+
 class TestDataImporter(TestCase):
 
     def test_constructor(self):
@@ -79,7 +80,7 @@ class TestDataImporter(TestCase):
         # ts = pd.Timestamp('2022-12-01') TODO
         # assert approx(df[fs_id][ts], 296.80)
 
-    def  test_adjust_dates_quandle(self):
+    def test_adjust_dates_quandle(self):
         di = DataImporter()
         col_nam = md.sp500_div_yield_month
         url = di.get_url(col_nam)
@@ -92,7 +93,6 @@ class TestDataImporter(TestCase):
     def test_adjust_dates_to_start_of_month(self):
         rng1 = pd.date_range('2015-03-30', periods=10, freq='SM')
         rng2 = pd.date_range('2015-05-01', periods=3, freq='MS')
-        rng3 = pd.date_range
         rng = rng1.union(rng2)
         df = pd.DataFrame({'Date': rng, 'Value': np.arange(0.0, len(rng), 1.0)})
         print(df)
@@ -218,6 +218,7 @@ class TestDataImporter(TestCase):
     # test al data importer functions
     def test_all_dates_daily(self):
         df = DataImporter().get_series_as_df(md.int_two_year_cm)
+        assert not check_all_dates_daily(df)
         df = df.asfreq('D')
         df = df.interpolate(method='cubicspline')
         with pd.option_context('display.max_rows', None):

@@ -1,14 +1,14 @@
+import fredapi as fa
 import numpy
 import numpy as np
 import pandas as pd
-import fredapi as fa
 import quandl
 import requests
-import NumUtilities
 from IPython.core.display_functions import display
 from lxml import html as HTMLParser
 from pandas import DataFrame, Series
 
+import NumUtilities
 from MyData import MyData
 
 # API keys
@@ -75,14 +75,14 @@ def adjust_sequence(fs_id, df):
 
 
 def print_df(df: DataFrame, descript: str = 'No Description') -> None:
-    print('----- Dataframe Info for ' + descript + '-----')
+    print('----- DataFrame Info for ' + descript + '-----')
     df.info()
     print(df.columns)
     print(df.dtypes)
     print(df.index.values)
     df.describe()
     print(df)
-    print('------ Endframe Info for ' + descript + '-----')
+    print('------ End DataFrame Info for ' + descript + '-----')
 
 
 class DataImporter:
@@ -116,7 +116,7 @@ class DataImporter:
         fs = self.get_series_as_series(fs_id)
         return fs.astype(float).to_numpy()
 
-    def get_selected_series_as_df(self, id_list: list, include_dep=True):
+    def get_selected_series_as_df(self, id_list: list):
         df = DataFrame()
         for fs_id in id_list:
             if fs_id not in df.columns:
@@ -132,17 +132,9 @@ class DataImporter:
 
         return df
 
-    # TODO this function should not be necessary
-    '''
-    def is_available(self, fs_id):
-        return fs_id in self.__series_list
-    '''
-
     def import_us_market(self) -> DataFrame:
         df: DataFrame
         df = quandl.get('MULTPL/SP500_PE_RATIO_MONTH', )
-        x = df['Value']
-
         return df
 
     def get_data_from_quandle(self, url):
@@ -199,7 +191,7 @@ class DataImporter:
                               index=['Date', MyData.sp500_div_reinvest_month]).T
             df.set_index('Date', inplace=True)
             print(df)
-            return (df)
+            return df
 
         if fs_id == MyData.sp500_earnings_growth:
             prereq = [MyData.sp500_pe_ratio_month, MyData.sp500_earnings_yield]
@@ -269,11 +261,11 @@ class DataImporter:
         '''
         return df
 
-    def get_url(self, id):
-        return self.__data_dict['url'].get(id)
+    def get_url(self, fs_id):
+        return self.__data_dict['url'].get(fs_id)
 
-    def get_url_type(self, id):
-        return self.__data_dict['type'].get(id)
+    def get_url_type(self, fs_id):
+        return self.__data_dict['type'].get(fs_id)
 
 
 def all_dates_month_start(df):
@@ -286,8 +278,8 @@ def check_all_dates_daily(df) -> bool:
     dates_0: numpy = dates[1:]
     dates_1: numpy = dates + pd.Timedelta(1, "d")
     dates_1 = dates_1[:-1]
-    all_daily: numpy = (dates_0 == dates_1)
-    return all_daily.all()
+    all_daily = (dates_0 == dates_1)
+    return False not in all_daily
 
 
 def check_all_values_contiguous(df: DataFrame) -> bool:
