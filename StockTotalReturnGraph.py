@@ -16,7 +16,7 @@ def totalReturnGraph(tickers: list, period: str='max', interval='1d' ):
     df = pd.DataFrame()
     for ticker in tickers:
         all_data = yf.Ticker(ticker)
-        hist = all_data.history(period='max')
+        hist = all_data.history(period=period,interval=interval)
         price = hist['Close']
         div = hist['Dividends']
         cap = hist['Capital Gains']
@@ -36,6 +36,10 @@ def totalReturnGraph(tickers: list, period: str='max', interval='1d' ):
     print(df)
     scale_to_start_value(df)
     print(df)
-    df.plot.line(y=df.columns,figsize=(10,7.5),logy=True)
+    ax = df.plot.line(y=df.columns,figsize=(10,7.5),logy=True,grid=True)
+    ax.minorticks_on()
+    ax.grid('on', which='minor', axis='x')
+    ax.grid('on', which='minor', axis='y')
+    # ax.xaxis.grid(True, which='minor', linestyle='-', linewidth=0.25)
     plt.show()
 

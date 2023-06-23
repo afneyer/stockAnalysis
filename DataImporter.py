@@ -1,48 +1,19 @@
-from typing import Dict, List
-
 import numpy
 import numpy as np
 import pandas as pd
+import fredapi as fa
 import quandl
 import requests
+import NumUtilities
 from IPython.core.display_functions import display
 from lxml import html as HTMLParser
-from pandas import DataFrame
+from pandas import DataFrame, Series
 
-import NumUtilities
+from MyData import MyData
 
+# API keys
+frd = fa.Fred(api_key='b056b2f10d5f964dadde84be2f5e7b73')
 quandl.ApiConfig.api_key = 'iYippvXT8yzS7xK47yoh'
-
-
-class MyData:
-    # data types
-    quandle = 'quandle'
-    multpl = 'multpl'
-    compute = 'compute'
-
-    # define all data series ids
-    sp500_pe_ratio_month = 'SP500_PE_Ratio_Month'
-    sp500_div_yield_month = 'SP500_Div_Yield_Month'
-    sp500_real_price_month = 'SP500_Real_Price_Month'
-    cpi_urban_month = 'CPI_Urban_Month'
-    ten_year_treasury_month = 'Ten_Year_Treasury'
-    sp500_div_reinvest_month = 'SP500_Div_Reinvest_Month'
-    sp500_earnings_growth = 'SP500_Growth_Based_On_Earnings'
-    sp500_earnings_yield = "SP500_Earnings_Annual_Yield_Monthly"
-    us_gdp_nominal = "Nominal_US_GDP_Quarterly"
-
-    urls = [
-        [sp500_pe_ratio_month, quandle, 'MULTPL/SP500_PE_RATIO_MONTH'],
-        [sp500_div_yield_month, quandle, 'MULTPL/SP500_DIV_YIELD_MONTH'],
-        [sp500_real_price_month, quandle, 'MULTPL/SP500_REAL_PRICE_MONTH'],
-        [cpi_urban_month, multpl, 'https://www.multpl.com/cpi/table/by-month'],
-        [ten_year_treasury_month, multpl, 'https://www.multpl.com/10-year-treasury-rate/table/by-month'],
-        [us_gdp_nominal, quandle, 'FRED/GDP'],
-        # for computed ids the url is a list of dependencies (i.e. a list of data series ids)
-        [sp500_div_reinvest_month, compute, [sp500_real_price_month, sp500_div_yield_month]],
-        [sp500_earnings_growth, compute, [sp500_pe_ratio_month, sp500_real_price_month]],
-        [sp500_earnings_yield, compute, [sp500_pe_ratio_month, sp500_real_price_month]]
-    ]
 
 
 def adjust_dates_to_start_of_month(df):
@@ -93,7 +64,7 @@ def adjust_sequence(fs_id, df):
         df2 = df1.interpolate(method='cubicspline')
         return df2
     elif fs_id == MyData.sp500_div_yield_month:
-        df[MyData.sp500_div_yield_month] = df[MyData.sp500_div_yield_month]/100.0
+        df[MyData.sp500_div_yield_month] = df[MyData.sp500_div_yield_month] / 100.0
         return adjust_dates_to_start_of_month(df)
     elif fs_id == MyData.sp500_real_price_month:
         return adjust_dates_to_start_of_month(df)
@@ -103,9 +74,21 @@ def adjust_sequence(fs_id, df):
         return df
 
 
+def print_df(df: DataFrame, descript: str = 'No Description') -> None:
+    print('----- Dataframe Info for ' + descript + '-----')
+    df.info()
+    print(df.columns)
+    print(df.dtypes)
+    print(df.index.values)
+    df.describe()
+    print(df)
+    print('------ Endframe Info for ' + descript + '-----')
+
+
 class DataImporter:
     __data_dict: DataFrame
     # contains the list of loaded data frames accessed the name of the series
+    __series_list: dict
     __all_data: DataFrame
 
     # data columns
@@ -113,18 +96,47 @@ class DataImporter:
         self.__data_dict = pd.DataFrame(MyData.urls, columns=['fs_id', 'type', 'url'])
         self.__data_dict.set_index('fs_id', inplace=True)
         self.__all_data = pd.DataFrame()
+        self.__series_list = {}
 
     def display_series_dictionary(self):
         display(self.__data_dict.to_string())
 
-    def get_numpy(self, fs_id) -> numpy:
-        return self.__all_data[fs_id].to_numpy()
+    def get_series_as_df(self, fs_id: str):
+        if fs_id in self.__series_list:
+            df = self.__series_list[fs_id]
+        else:
+            df = self.__import_series(fs_id)
 
+        return df
+
+    def get_series_as_series(self, fs_id: str) -> Series:
+        return self.get_series_as_df(fs_id).squeeze()
+
+    def get_series_as_numpy(self, fs_id) -> numpy:
+        fs = self.get_series_as_series(fs_id)
+        return fs.astype(float).to_numpy()
+
+    def get_selected_series_as_df(self, id_list: list, include_dep=True):
+        df = DataFrame()
+        for fs_id in id_list:
+            if fs_id not in df.columns:
+                df1 = self.get_series_as_df(fs_id)
+                if df.empty:
+                    df = df1
+                else:
+                    print('---Merging df with ' + fs_id)
+                    # print_df(df,'Base Dataframe')
+                    # print_df(df1,'Merging Dataframe')
+                    df = pd.merge(df, df1, on='Date', how='outer')
+                    # print(df)
+
+        return df
+
+    # TODO this function should not be necessary
+    '''
     def is_available(self, fs_id):
-        return fs_id in self.__all_data
-
-    def get_index_values(self):
-        return self.__all_data.index.values;
+        return fs_id in self.__series_list
+    '''
 
     def import_us_market(self) -> DataFrame:
         df: DataFrame
@@ -166,72 +178,77 @@ class DataImporter:
 
         return df
 
-    def compute_series(self, fs_name):
-        if fs_name == MyData.sp500_div_reinvest_month:
-            np_div_yield = self.get_numpy(MyData.sp500_div_yield_month)
-            np_sp500 = self.get_numpy(MyData.sp500_real_price_month)
+    def get_data_from_fred(self, url):
+        series = frd.get_series(url)
+        series.name = url
+        df = series.to_frame(name='Value')
+        df.index.name = 'Date'
+        return df
+
+    def compute_series(self, fs_id):
+        # create a df of the dependant series to align the series
+        if fs_id == MyData.sp500_div_reinvest_month:
+            prereq = [MyData.sp500_div_yield_month, MyData.sp500_real_price_month]
+            df = self.get_selected_series_as_df(prereq)
+            np_div_yield = df[MyData.sp500_div_yield_month].astype(float).to_numpy()
+            np_sp500 = df[MyData.sp500_real_price_month].astype(float).to_numpy()
             np_div_value = np_div_yield * np_sp500 / 12.0
             np_tot_return = NumUtilities.total_return(np_sp500, np_div_value)
             print(np_tot_return)
-            print(self.get_index_values())
-            df = pd.DataFrame(data=[self.get_index_values(), np_tot_return],
+            df = pd.DataFrame(data=[df.index.values, np_tot_return],
                               index=['Date', MyData.sp500_div_reinvest_month]).T
             df.set_index('Date', inplace=True)
             print(df)
             return (df)
 
-        if fs_name == MyData.sp500_earnings_growth:
-            np_pe = self.get_numpy(MyData.sp500_pe_ratio_month)
-            np_sp500 = self.get_numpy(MyData.sp500_real_price_month)
+        if fs_id == MyData.sp500_earnings_growth:
+            prereq = [MyData.sp500_pe_ratio_month, MyData.sp500_earnings_yield]
+            df = self.get_selected_series_as_df(prereq)
+            np_pe = self.get_series_as_numpy(MyData.sp500_pe_ratio_month)
+            np_sp500 = self.get_series_as_numpy(MyData.sp500_real_price_month)
             np_earnings_yield = np.reciprocal(np_pe) / 12.0
             np.savetxt("Earnings Yield.txt", np_earnings_yield)
             sp500_start = np_sp500[0]
             np_tot_earn_ret = NumUtilities.yield_return(sp500_start, np_earnings_yield)
-            df = pd.DataFrame(data=[self.get_index_values(), np_tot_earn_ret],
+            df = pd.DataFrame(data=[df.index.values, np_tot_earn_ret],
                               index=['Date', MyData.sp500_earnings_growth]).T
             df.set_index('Date', inplace=True)
             return df
 
-        if fs_name == MyData.sp500_earnings_yield:
-            np_pe = self.get_numpy(MyData.sp500_pe_ratio_month)
+        if fs_id == MyData.sp500_earnings_yield:
+            prereq = [MyData.sp500_pe_ratio_month]
+            df = self.get_selected_series_as_df(prereq)
+            np_pe = self.get_series_as_numpy(MyData.sp500_pe_ratio_month)
             np_earnings_yield = np.reciprocal(np_pe)
-            df = pd.DataFrame(data=[self.get_index_values(), np_earnings_yield],
+            df = pd.DataFrame(data=[df.index.values, np_earnings_yield],
                               index=['Date', MyData.sp500_earnings_yield]).T
             df.set_index('Date', inplace=True)
+            df = df.astype('float')
+            print(df.dtypes)
             return df
 
     def import_all_series(self):
         id_list = self.__data_dict.index
-        self.import_selected_series(id_list)
+        self.get_selected_series_as_df(id_list)
         return self.__all_data
 
-    def import_selected_series(self, id_list):
-        for fs_id in id_list:
-            self.import_series(fs_id)
-        return self.__all_data
-
-    def import_series(self, fs_id):
-        # if the list is already imported, simply return the data frame with all data
-        if self.is_available(fs_id):
-            return self.__all_data
+    def __import_series(self, fs_id):
 
         # import the series based on the type/source of series
         fs_type = self.get_url_type(fs_id)
         url_str = self.get_url(fs_id)
-
-        if fs_type == 'quandle':
+        df = DataFrame()
+        if fs_type == MyData.quandle:
             print("---Importing from Quandle: ", fs_id)
             df = self.get_data_from_quandle(url_str)
-        elif fs_type == 'multpl':
+        elif fs_type == MyData.multpl:
             print("---Importing from Multpl: ", fs_id)
             df = self.get_data_from_multpl_website(url_str)
+        elif fs_type == MyData.fred:
+            print("---Importing from " + MyData.fred, fs_id)
+            df = self.get_data_from_fred(url_str)
         elif fs_type == 'compute':
             print("---Computing Series: ", fs_id)
-            # import the dependent series
-            fs_list = self.get_url(fs_id)
-            print("---Importing dependent series: ", fs_list)
-            for fs_id1 in fs_list:
-                self.import_selected_series(fs_list)
             df = self.compute_series(fs_id)
         df = df.rename(columns={'Value': fs_id})
 
@@ -241,15 +258,38 @@ class DataImporter:
         # save the sequence in a text file
         df.to_csv(fs_id + ".csv")
         # add to the all_data frame
+        self.__series_list[fs_id] = df
+        # TODO remove __all_data
+        '''
         if self.__all_data.empty:
             self.__all_data = df
         else:
             self.__all_data = pd.merge(self.__all_data, df, on='Date', how='outer')
         print(self.__all_data.head)
-        return self.__all_data
+        '''
+        return df
 
     def get_url(self, id):
         return self.__data_dict['url'].get(id)
 
     def get_url_type(self, id):
         return self.__data_dict['type'].get(id)
+
+
+def all_dates_month_start(df):
+    return False not in (pd.to_datetime(df.index.values).day == 1)
+
+
+# checks whether the dates in the index are all consecutive
+def check_all_dates_daily(df) -> bool:
+    dates = pd.to_datetime(df.index.values)
+    dates_0: numpy = dates[1:]
+    dates_1: numpy = dates + pd.Timedelta(1, "d")
+    dates_1 = dates_1[:-1]
+    all_daily: numpy = (dates_0 == dates_1)
+    return all_daily.all()
+
+
+def check_all_values_contiguous(df: DataFrame) -> bool:
+    df1 = df[~df[df.columns[0]].isna()]
+    return check_all_dates_daily(df1)

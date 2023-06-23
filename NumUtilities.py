@@ -32,7 +32,7 @@ def total_return(price: ndarray, div: ndarray) -> numpy:
     tot_ret_per_period[0] = price[0]
 
     # Calculate the cumulative Total Return.
-    tot_ret = tot_ret_per_period.cumprod()
+    tot_ret = np.nancumprod(tot_ret_per_period)
 
     return tot_ret
 

@@ -11,5 +11,5 @@ from StockTotalReturnGraph import totalReturnGraph
 
 class MyTestCase(unittest.TestCase):
     def test_vnq_rez_spy(self):
-        totalReturnGraph(['spy','rez','vnq'])
+        totalReturnGraph(['spy','rez','vnq'],period='10y')
 

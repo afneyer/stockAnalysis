@@ -118,3 +118,52 @@ class MyTestCase(unittest.TestCase):
         t_cap = all_data.capital_gains
 
         print(t_cap)
+
+    def test_dictionary_with_data_frames(self):
+        data = {'Key': ['k1', 'k2', 'k3'], 'Value': ['A', 'B', 'C']}
+        df1 = pd.DataFrame(data)
+        df1.set_index('Key',inplace=True)
+        df2 = pd.DataFrame(data)
+        df2.set_index('Key',inplace=True)
+        print(df1)
+        my_dict = {'key1': df1,'key2': df2}
+        df = my_dict.get('key1')
+        my_dict['key3']=df1
+        print(df)
+
+    # apparently there is no way to put dictionaries into dictionaries
+    def test_data_frame_with_data_frames(self):
+        data = {'Key': ['k1', 'k2', 'k3'], 'Value': ['A', 'B', 'C']}
+        df1 = pd.DataFrame(data)
+        df1.set_index('Key', inplace=True)
+        df2 = pd.DataFrame(data)
+        df2.set_index('Key', inplace=True)
+        df3=df2
+        print(df1)
+        data1 = {'Key': ['row1','row2','row3'], 'Value':[0.0,1.1,2.2]}
+        dfofdf = pd.DataFrame(data1)
+        dfofdf.set_index('Key',inplace=True)
+        # dfofdf['Series'] = np.nan
+        dfofdf.at['row1','Series'] = 10.0
+        dfofdf.at['row2','Series'] = df2.copy()
+        dfofdf.loc['row3','Series'] = pd.DataFrame()
+        df = dfofdf.loc['row1','Series']
+        df4 = dfofdf.at['row3', 'Series']
+        print(df)
+        print(df4)
+
+    def test_converting_to_numeric(self):
+        data = {'Key': ['k1', 'k2', 'k3'], 'Value': [7, 6, 5]}
+        df = pd.DataFrame(data)
+        numpy_array = df.to_numpy()
+        print(numpy_array)
+        conv = pd.to_numeric(numpy_array, dtype="float")
+        print(numpy_array)
+        print(conv)
+        s = pd.Series([1, np.nan, 3.0], dtype="float")
+        print(s)
+        # pd.to_numeric(s, errors='coerce')
+        s1 = pd.to_numeric(s, downcast="float")
+        print(s)
+        print(s1)
+
