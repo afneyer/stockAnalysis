@@ -3,7 +3,6 @@ from unittest import TestCase
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import ndarray
 
 import DataPlotUtil
 import NumUtilities
@@ -78,7 +77,7 @@ class TestMonthlyData(TestCase):
         fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(df,'SP500+DivMonthly')
 
         # Compute n-period return
-        n = 60  # three year returns
+        n = 1  # three year returns
         xaxis = df['FullDate'].to_numpy()
         y = df['SP500+DivMonthly'].squeeze().to_numpy()
         x1, y1 = return_over_number_periods(n, xaxis, y)
@@ -162,7 +161,7 @@ class TestMonthlyData(TestCase):
         gdp_percent_inc = df[MyData.us_gdp_nominal].pct_change()
         print(len(df))
         y2 = NumUtilities.moving_average(gdp_percent_inc, n)
-        xaxis = xaxis[n:]
+        xaxis = xaxis[n-1:]
 
         ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
         label = "SP500 Percent Increase to Previous Month"
@@ -182,6 +181,10 @@ class TestMonthlyData(TestCase):
         plt.title("Cross Correlation of Total Monthly Return and 10-Year Treasury")
         plt.show()
 
+        DataPlotUtil.scatter_plot_with_regression_line(y2,y1,2)
+
+        # scatter plot gdp increase
+
     def test_monthly_data_scatter_plot_with_n_period_return(self):
         df = DataImporter().get_series_as_df(MyData.sp500_div_reinvest_month)
 
@@ -194,8 +197,6 @@ class TestMonthlyData(TestCase):
         x1, y1 = return_over_number_periods(n, xaxis, y)
 
         # y2 next n-month return
-        np.array([1.0, 5.0, 10.0, 20.0, 40.0, 60.0, 100.0, 200.0,
-                  400.0, 760.0], dtype=float)
         y3 = np.array(y1[n:],dtype=float)
         y4 = np.array(y1[:-n],dtype=float)
 

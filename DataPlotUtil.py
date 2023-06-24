@@ -45,3 +45,23 @@ def plot_sp500_monthly_logscale(di: DataImporter, fs_id):  # -> Tuple[figure, ax
 
     return fig, ax1
 
+def scatter_plot_with_regression_line(x,y,y_delay=0, descript=''):
+    # y next n-month return
+    y1 = np.array(y[y_delay:], dtype=float)
+    x1 = np.array(x[:len(x)-y_delay], dtype=float)
+
+    # label = str(n) + "-day return based previous n-day return"
+    m, b = np.polyfit(x1, y1, 1)
+    xmin = x1.min()
+    xmax = x1.max()
+
+    fig, ax = plt.subplots(figsize=(10, 7.5))
+
+    ax.scatter(x1, y1, 10)
+
+    plt.xlim([xmin, xmax])
+    plt.title('Scatterplot of ' + descript + ' with y Delayed by ' + str(y_delay) + ' Periods')
+
+    ax.plot(x1, m * x1 + b, label='regression line')
+    plt.show()
+
