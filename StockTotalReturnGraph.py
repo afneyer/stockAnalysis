@@ -19,7 +19,10 @@ def totalReturnGraph(tickers: list, period: str='max', interval='1d' ):
         hist = all_data.history(period=period,interval=interval)
         price = hist['Close']
         div = hist['Dividends']
-        cap = hist['Capital Gains']
+        if 'Capital Gains' in df.columns.values:
+            cap = hist['Capital Gains']
+        else:
+            cap = np.zeros(len(hist))
         total_div = (div + cap).squeeze().to_numpy()
         price = price.squeeze().to_numpy()
         tot_ret = total_return(price,total_div)

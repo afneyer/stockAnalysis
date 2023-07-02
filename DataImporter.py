@@ -258,7 +258,7 @@ class DataImporter:
         df = self.adjust_sequence(fs_id, df)
 
         # save the sequence in a text file
-        df.to_csv(fs_id + ".csv")
+        df.to_csv('./output/' + fs_id + ".csv")
         # add to the all_data frame
         self.__series_list[fs_id] = df
 

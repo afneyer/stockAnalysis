@@ -12,11 +12,15 @@ from MyData import MyData
 from NumUtilities import return_over_number_periods
 
 
+def save_figure(label: str, plot):
+    plot.savefig('./plots/' + 'sp500_plus_' + label + '.pdf', format='pdf', bbox_inches="tight")
+
+
 class TestMonthlyData(TestCase):
 
     def test_sp500_total_return_basic(self):
         di = DataImporter()
-        DataPlotUtil.plot_sp500_monthly_logscale(di,MyData.sp500_div_reinvest_month)
+        DataPlotUtil.plot_sp500_monthly_logscale(di, MyData.sp500_div_reinvest_month)
         plt.show()
 
     def test_plot_based_on_data_frame(self):
@@ -32,7 +36,7 @@ class TestMonthlyData(TestCase):
         di = DataImporter()
 
         df = di.get_selected_series_as_df(required_series)
-        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(di,MyData.sp500_div_reinvest_month)
+        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(di, MyData.sp500_div_reinvest_month)
 
         label = "Earnings Reinvested"
         tret = df[MyData.sp500_earnings_growth].squeeze().to_numpy()
@@ -53,7 +57,7 @@ class TestMonthlyData(TestCase):
         required_series = [MyData.sp500_earnings_yield, MyData.sp500_div_yield_month]
         di = DataImporter()
         df = di.get_selected_series_as_df(required_series)
-        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(di,MyData.sp500_div_reinvest_month)
+        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(di, MyData.sp500_div_reinvest_month)
 
         label = "Earnings Yield"
         ey = df[MyData.sp500_earnings_yield].squeeze().to_numpy()
@@ -74,7 +78,7 @@ class TestMonthlyData(TestCase):
     def test_monthly_data_with_60_month_return(self):
         df = DataFileReader().read_us_market_visualizations()
 
-        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(df,'SP500+DivMonthly')
+        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(df, 'SP500+DivMonthly')
 
         # Compute n-period return
         n = 1  # three year returns
@@ -88,14 +92,14 @@ class TestMonthlyData(TestCase):
 
         fig.tight_layout()  # otherwise the right y-label is slightly clipped
         plt.legend(loc='upper right')
-        plt.savefig("sp500_plus_" + label + ".pdf", format="pdf", bbox_inches="tight")
+        save_figure(label, plt)
         plt.show()
 
     @unittest.skip
     def test_monthly_data_with_10_year_treasury(self):
         df = DataFileReader().read_us_market_visualizations()
 
-        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(df,'SP500+DivMonthly')
+        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(df, 'SP500+DivMonthly')
 
         xaxis = df['FullDate'].to_numpy()
         y = df['10-YearTreasury'].squeeze().to_numpy()
@@ -107,14 +111,14 @@ class TestMonthlyData(TestCase):
         fig.tight_layout()
         # otherwise the right y-label is slightly clipped
         plt.legend(loc='upper right')
-        plt.savefig("sp500_plus_" + label + ".pdf", format="pdf", bbox_inches="tight")
+        save_figure(label, plt)
         plt.show()
 
     @unittest.skip
     def test_monthly_data_with_earnings_return(self):
         df = DataFileReader().read_us_market_visualizations()
 
-        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(df,'SP500+DivMonthly')
+        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(df, 'SP500+DivMonthly')
         xaxis = df['FullDate'].to_numpy()
 
         sp = df['SP500Index'].to_numpy()
@@ -141,7 +145,7 @@ class TestMonthlyData(TestCase):
         fig.set_figheight(7)
         fig.set_figwidth(20)
         plt.legend(loc='upper right')
-        plt.savefig("sp500_plus_" + label + ".pdf", format="pdf", bbox_inches="tight")
+        save_figure(label, plt)
         plt.show()
 
     def test_SP500_and_GDP_percent_increase(self):
@@ -151,7 +155,7 @@ class TestMonthlyData(TestCase):
         start = df[MyData.us_gdp_nominal].first_valid_index()
         df = df.loc[start:]
 
-        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(di,MyData.sp500_div_reinvest_month)
+        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(di, MyData.sp500_div_reinvest_month)
         xaxis = df.index.values
 
         sp500_percent_inc = df[MyData.sp500_div_reinvest_month].pct_change()
@@ -161,7 +165,7 @@ class TestMonthlyData(TestCase):
         gdp_percent_inc = df[MyData.us_gdp_nominal].pct_change()
         print(len(df))
         y2 = NumUtilities.moving_average(gdp_percent_inc, n)
-        xaxis = xaxis[n-1:]
+        xaxis = xaxis[n - 1:]
 
         ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
         label = "SP500 Percent Increase to Previous Month"
@@ -174,14 +178,14 @@ class TestMonthlyData(TestCase):
         fig.set_figheight(7.5)
         fig.set_figwidth(10)
         plt.legend(loc='upper right')
-        plt.savefig("sp500_plus_" + label + ".pdf", format="pdf", bbox_inches="tight")
+        save_figure(label, plt)
         plt.show()
 
         plt.xcorr(y1, y2, usevlines=True, normed=True, maxlags=60)
         plt.title("Cross Correlation of Total Monthly Return and 10-Year Treasury")
         plt.show()
 
-        DataPlotUtil.scatter_plot_with_regression_line(y2,y1,2)
+        DataPlotUtil.scatter_plot_with_regression_line(y2, y1, 2)
 
         # scatter plot gdp increase
 
@@ -191,34 +195,35 @@ class TestMonthlyData(TestCase):
         # fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(df)
 
         # Compute n-period return
-        n = 1 # one month returns
+        n = 84  # one month returns
         xaxis = df.index.values
         y = df[MyData.sp500_div_reinvest_month].squeeze().to_numpy()
         x1, y1 = return_over_number_periods(n, xaxis, y)
 
         # y2 next n-month return
-        y3 = np.array(y1[n:],dtype=float)
-        y4 = np.array(y1[:-n],dtype=float)
-
+        y3 = np.array(y1[n:], dtype=float)
+        y4 = np.array(y1[:-n], dtype=float)
 
         label = str(n) + "-month return based previous n-month return"
-        m,b = np.polyfit(y3,y4,1)
+        res = np.polyfit(y3, y4, 1)
+        m = res[0]
+        b = res[1]
         y3min = y3.min()
         y3max = y3.max()
 
-        fig, ax = plt.subplots(figsize=(10,7.5))
+        fig, ax = plt.subplots(figsize=(10, 7.5))
 
-        ax.scatter(y3, y4,1)
+        ax.scatter(y3, y4, 1)
 
-        plt.xlim([y3min,y3max])
+        plt.xlim([y3min, y3max])
         plt.title(label)
 
-        ax.plot(y3, m*y3+b, label='regression line')
+        ax.plot(y3, m * y3 + b, label='regression line')
 
         # ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
         # ax2.plot(x1, y1, 'b', label=label)
 
         # fig.tight_layout()  # otherwise the right y-label is slightly clipped
         plt.legend(loc='upper right')
-        plt.savefig("sp500_plus_" + label + ".pdf", format="pdf", bbox_inches="tight")
+        save_figure(label, plt)
         plt.show()

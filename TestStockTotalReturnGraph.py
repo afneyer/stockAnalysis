@@ -9,7 +9,10 @@ from NumUtilities import return_over_number_periods, yield_return, moving_averag
 from StockTotalReturnGraph import totalReturnGraph
 
 
-class MyTestCase(unittest.TestCase):
+class TestTotalReturnGraph(unittest.TestCase):
     def test_vnq_rez_spy(self):
         totalReturnGraph(['spy','rez','vnq'],period='10y')
+
+    def test_dea_hasi_spy(self):
+        totalReturnGraph(['dea','hasi','spy'])
 
