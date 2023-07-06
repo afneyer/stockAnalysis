@@ -4,12 +4,12 @@ import tensorflow as tf
 import tensorflow.python.keras.models
 from keras.layers import Bidirectional
 from matplotlib import pyplot as plt
-# from tensorflow.keras.models import Sequential
-# from tensorflow.keras.layers import LSTM, Dense, Dropout, Bidirectional
-# from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
-from tensorflow.python.keras import Sequential
-from tensorflow.python.keras.layers import LSTM, Dense, Dropout
-from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard
+from keras.models import Sequential
+from keras.layers import LSTM, Dense, Dropout, Bidirectional
+from keras.callbacks import ModelCheckpoint, TensorBoard
+# from tensorflow.python.keras import Sequential
+# from tensorflow.python.keras.layers import LSTM, Dense, Dropout
+# from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 import yahoo_fin.stock_info as si
@@ -291,7 +291,8 @@ def predict(model, data):
     else:
         predicted_price = prediction[0][0]
     return predicted_price
-# %matplotlib inline
+#
+
 class TestTensorFlow(TestCase):
 
     def test_sample_from_Python_Code(self):
