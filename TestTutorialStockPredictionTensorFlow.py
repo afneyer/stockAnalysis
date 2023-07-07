@@ -1,8 +1,8 @@
 from unittest import TestCase
 
 import tensorflow as tf
-import tensorflow.python.keras.models
-from keras.layers import Bidirectional
+# import tensorflow.python.keras.models
+# from keras.layers import Bidirectional
 from matplotlib import pyplot as plt
 from keras.models import Sequential
 from keras.layers import LSTM, Dense, Dropout, Bidirectional
@@ -14,13 +14,14 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 import yahoo_fin.stock_info as si
 from collections import deque
-import os
 import time
 
 import os
 import numpy as np
 import pandas as pd
 import random
+
+from tensorflow.python.client import device_lib
 
 plt.style.use('seaborn-poster')
 
@@ -40,7 +41,7 @@ scale_str = f"sc-{int(SCALE)}"
 SHUFFLE = True
 shuffle_str = f"sh-{int(SHUFFLE)}"
 # whether to split the training/testing set by date
-SPLIT_BY_DATE = True # originally False
+SPLIT_BY_DATE = True  # originally False
 split_by_date_str = f"sbd-{int(SPLIT_BY_DATE)}"
 # test ratio size, 0.2 is 20%
 TEST_SIZE = 0.2
@@ -48,6 +49,7 @@ TEST_SIZE = 0.2
 FEATURE_COLUMNS = ["adjclose", "volume", "open", "high", "low"]
 # date now
 date_now = time.strftime("%Y-%m-%d")
+date_now = "2020-01-01" # todo review
 # model parameters
 N_LAYERS = 2
 # LSTM cell
@@ -108,7 +110,8 @@ def load_data(ticker, n_steps=50, scale=True, shuffle=True, lookup_step=1, split
         split_by_date (bool): whether we split the dataset into training/testing by date, setting it
             to False will split datasets in a random way
         test_size (float): ratio for test data, default is 0.2 (20% testing data)
-        feature_columns (list): the list of features to use to feed into the model, default is everything grabbed from yahoo_fin
+        feature_columns (list): the list of features to use to feed into the model,
+        default is everything grabbed from yahoo_fin
     """
     # see if ticker is already a loaded stock from yahoo finance
     if isinstance(ticker, str):
@@ -120,9 +123,8 @@ def load_data(ticker, n_steps=50, scale=True, shuffle=True, lookup_step=1, split
     else:
         raise TypeError("ticker can be either a str or a `pd.DataFrame` instances")
     # this will contain all the elements we want to return from this function
-    result = {}
+    result = {'df': df.copy()}
     # we will also return the original dataframe itself
-    result['df'] = df.copy()
     # make sure that the passed feature_columns exist in the dataframe
     for col in feature_columns:
         assert col in df.columns, f"'{col}' does not exist in the dataframe."
@@ -223,6 +225,7 @@ def create_model(sequence_length, n_features, units=256, cell=LSTM, n_layers=2, 
     model.compile(loss=loss, metrics=["mean_absolute_error"], optimizer=optimizer)
     return model
 
+
 def plot_graph(test_df):
     """
     This function plots true close price along with predicted close price
@@ -235,6 +238,7 @@ def plot_graph(test_df):
     plt.legend(["Actual Price", "Predicted Price"])
     plt.show()
 
+
 def get_final_df(model, data):
     """
     This function takes the `model` and `data` dict to
@@ -243,7 +247,7 @@ def get_final_df(model, data):
     """
     # if predicted future price is higher than the current,
     # then calculate the true future price minus the current price, to get the buy profit
-    buy_profit  = lambda current, pred_future, true_future: true_future - current if pred_future > current else 0
+    buy_profit = lambda current, pred_future, true_future: true_future - current if pred_future > current else 0
     # if the predicted future price is lower than the current price,
     # then subtract the true future price from the current price
     sell_profit = lambda current, pred_future, true_future: current - true_future if pred_future < current else 0
@@ -264,19 +268,20 @@ def get_final_df(model, data):
     final_df = test_df
     # add the buy profit column
     final_df["buy_profit"] = list(map(buy_profit,
-                                    final_df["adjclose"],
-                                    final_df[f"adjclose_{LOOKUP_STEP}"],
-                                    final_df[f"true_adjclose_{LOOKUP_STEP}"])
-                                    # since we don't have profit for last sequence, add 0's
-                                    )
+                                      final_df["adjclose"],
+                                      final_df[f"adjclose_{LOOKUP_STEP}"],
+                                      final_df[f"true_adjclose_{LOOKUP_STEP}"])
+                                  # since we don't have profit for last sequence, add 0's
+                                  )
     # add the sell profit column
     final_df["sell_profit"] = list(map(sell_profit,
-                                    final_df["adjclose"],
-                                    final_df[f"adjclose_{LOOKUP_STEP}"],
-                                    final_df[f"true_adjclose_{LOOKUP_STEP}"])
-                                    # since we don't have profit for last sequence, add 0's
-                                    )
+                                       final_df["adjclose"],
+                                       final_df[f"adjclose_{LOOKUP_STEP}"],
+                                       final_df[f"true_adjclose_{LOOKUP_STEP}"])
+                                   # since we don't have profit for last sequence, add 0's
+                                   )
     return final_df
+
 
 def predict(model, data):
     # retrieve the last sequence from data
@@ -291,158 +296,103 @@ def predict(model, data):
     else:
         predicted_price = prediction[0][0]
     return predicted_price
-#
+
+
+def run_model_fit():
+    # create the necessary directories
+    create_dirs()
+    # load the data
+    data = load_data(ticker, N_STEPS, scale=SCALE, split_by_date=SPLIT_BY_DATE,
+                     shuffle=SHUFFLE, lookup_step=LOOKUP_STEP, test_size=TEST_SIZE,
+                     feature_columns=FEATURE_COLUMNS)
+    # save the dataframe
+    data["df"].to_csv(ticker_data_filename)
+    # construct the model
+    model = create_model(N_STEPS, len(FEATURE_COLUMNS), loss=LOSS, units=UNITS, cell=CELL, n_layers=N_LAYERS,
+                         dropout=DROPOUT, optimizer=OPTIMIZER, bidirectional=BIDIRECTIONAL)
+    # some tensorflow callbacks
+    checkpointer = ModelCheckpoint(os.path.join("results", model_name + ".h5"), save_weights_only=True,
+                                   save_best_only=True, verbose=1)
+    tensorboard = TensorBoard(log_dir=os.path.join("logs", model_name))
+    # train the model and save the weights whenever we see
+    # a new optimal model using ModelCheckpoint
+    history = model.fit(data["X_train"], data["y_train"],
+                        batch_size=BATCH_SIZE,
+                        epochs=EPOCHS,
+                        validation_data=(data["X_test"], data["y_test"]),
+                        callbacks=[checkpointer, tensorboard],
+                        verbose=1)
+    return data, model
+
+
+def run_model_evaluation(data, model):
+    # load optimal model weights from results folder
+    model_path = os.path.join("results", model_name) + ".h5"
+    model.load_weights(model_path)
+
+    # evaluate the model
+    loss, mae = model.evaluate(data["X_test"], data["y_test"], verbose=0)
+    # calculate the mean absolute error (inverse scaling)
+    if SCALE:
+        mean_absolute_error = data["column_scaler"]["adjclose"].inverse_transform([[mae]])[0][0]
+    else:
+        mean_absolute_error = mae
+
+    # get the final dataframe for the testing set
+    final_df = get_final_df(model, data)
+
+    # predict the future price
+    future_price = predict(model, data)
+
+    # we calculate the accuracy by counting the number of positive profits
+    accuracy_score = (len(final_df[final_df['sell_profit'] > 0]) + len(final_df[final_df['buy_profit'] > 0])) / len(
+        final_df)
+    # calculating total buy & sell profit
+    total_buy_profit = final_df["buy_profit"].sum()
+    total_sell_profit = final_df["sell_profit"].sum()
+    # total profit by adding sell & buy together
+    total_profit = total_buy_profit + total_sell_profit
+    # dividing total profit by number of testing samples (number of trades)
+    profit_per_trade = total_profit / len(final_df)
+
+    # printing metrics
+    print(f"Future price after {LOOKUP_STEP} days is {future_price:.2f}$")
+    print(f"{LOSS} loss:", loss)
+    print("Mean Absolute Error:", mean_absolute_error)
+    print("Accuracy score:", accuracy_score)
+    print("Total buy profit:", total_buy_profit)
+    print("Total sell profit:", total_sell_profit)
+    print("Total profit:", total_profit)
+    print("Profit per trade:", profit_per_trade)
+
+    # plot true/pred prices graph
+    plot_graph(final_df)
+
+    print(final_df.tail(10))
+    # save the final dataframe to csv-results folder
+    csv_results_folder = "csv-results"
+    if not os.path.isdir(csv_results_folder):
+        os.mkdir(csv_results_folder)
+    csv_filename = os.path.join(csv_results_folder, model_name + ".csv")
+    final_df.to_csv(csv_filename)
+
+
+def get_available_devices():
+    local_device_protos = device_lib.list_local_devices()
+    return [x.name for x in local_device_protos if x.device_type == 'GPU' or x.device_type == 'CPU']
+
 
 class TestTensorFlow(TestCase):
 
-    def test_sample_from_Python_Code(self):
-        # create the necessary directories
-        create_dirs()
-        # load the data
-        data = load_data(ticker, N_STEPS, scale=SCALE, split_by_date=SPLIT_BY_DATE,
-                         shuffle=SHUFFLE, lookup_step=LOOKUP_STEP, test_size=TEST_SIZE,
-                         feature_columns=FEATURE_COLUMNS)
-        # save the dataframe
-        data["df"].to_csv(ticker_data_filename)
-        # construct the model
-        model = create_model(N_STEPS, len(FEATURE_COLUMNS), loss=LOSS, units=UNITS, cell=CELL, n_layers=N_LAYERS,
-                             dropout=DROPOUT, optimizer=OPTIMIZER, bidirectional=BIDIRECTIONAL)
-        # some tensorflow callbacks
-        checkpointer = ModelCheckpoint(os.path.join("results", model_name + ".h5"), save_weights_only=True,
-                                       save_best_only=True, verbose=1)
-        tensorboard = TensorBoard(log_dir=os.path.join("logs", model_name))
-        # train the model and save the weights whenever we see
-        # a new optimal model using ModelCheckpoint
-        history = model.fit(data["X_train"], data["y_train"],
-                            batch_size=BATCH_SIZE,
-                            epochs=EPOCHS,
-                            validation_data=(data["X_test"], data["y_test"]),
-                            callbacks=[checkpointer, tensorboard],
-                            verbose=1)
+    def test_devices(self):
+        print(tf.config.list_physical_devices())
+        print(tf.config.list_logical_devices())
+        print(get_available_devices())
 
-        # load optimal model weights from results folder
-        model_path = os.path.join("results", model_name) + ".h5"
-        model.load_weights(model_path)
+    def test_train_cpu(self):
+        with tf.device('/cpu:0'):
+            run_model_fit()
 
-        # evaluate the model
-        loss, mae = model.evaluate(data["X_test"], data["y_test"], verbose=0)
-        # calculate the mean absolute error (inverse scaling)
-        if SCALE:
-            mean_absolute_error = data["column_scaler"]["adjclose"].inverse_transform([[mae]])[0][0]
-        else:
-            mean_absolute_error = mae
-
-        # get the final dataframe for the testing set
-        final_df = get_final_df(model, data)
-
-        # predict the future price
-        future_price = predict(model, data)
-
-        # we calculate the accuracy by counting the number of positive profits
-        accuracy_score = (len(final_df[final_df['sell_profit'] > 0]) + len(final_df[final_df['buy_profit'] > 0])) / len(
-            final_df)
-        # calculating total buy & sell profit
-        total_buy_profit = final_df["buy_profit"].sum()
-        total_sell_profit = final_df["sell_profit"].sum()
-        # total profit by adding sell & buy together
-        total_profit = total_buy_profit + total_sell_profit
-        # dividing total profit by number of testing samples (number of trades)
-        profit_per_trade = total_profit / len(final_df)
-
-        # printing metrics
-        print(f"Future price after {LOOKUP_STEP} days is {future_price:.2f}$")
-        print(f"{LOSS} loss:", loss)
-        print("Mean Absolute Error:", mean_absolute_error)
-        print("Accuracy score:", accuracy_score)
-        print("Total buy profit:", total_buy_profit)
-        print("Total sell profit:", total_sell_profit)
-        print("Total profit:", total_profit)
-        print("Profit per trade:", profit_per_trade)
-
-        # plot true/pred prices graph
-        plot_graph(final_df)
-
-        print(final_df.tail(10))
-        # save the final dataframe to csv-results folder
-        csv_results_folder = "csv-results"
-        if not os.path.isdir(csv_results_folder):
-            os.mkdir(csv_results_folder)
-        csv_filename = os.path.join(csv_results_folder, model_name + ".csv")
-        final_df.to_csv(csv_filename)
-
-
-
-
-
-
-
-
-        '''
-        np.random.seed(0)
-        x = 10 * np.random.rand(100)
-
-        def model(x, sigma=0.3):
-            fast_oscillation = np.sin(5 * x)
-            slow_oscillation = np.sin(0.5 * x)
-            noise = sigma * np.random.randn(len(x))
-
-            return slow_oscillation + fast_oscillation + noise
-
-        plt.figure(figsize=(10, 8))
-        y = model(x)
-        plt.errorbar(x, y, 0.3, fmt='o')
-
-        mlp = MLPRegressor(hidden_layer_sizes=(200, 200, 200),
-                           max_iter=2000, solver='lbfgs',
-                           alpha=0.01, activation='tanh',
-                           random_state=8)
-
-        xfit = np.linspace(0, 10, 1000)
-        ytrue = model(xfit, 0)
-        yfit = mlp.fit(x[:, None], y).predict(xfit[:, None])
-
-        plt.figure(figsize=(10, 8))
-        plt.errorbar(x, y, 0.3, fmt='o')
-        plt.plot(xfit, yfit, '-r', label='predicted',
-                 zorder=10)
-        plt.plot(xfit, ytrue, '-k', alpha=0.5, \
-                 label='true model', zorder=10)
-        plt.legend()
-        plt.show()
-
-    def test_regression_sample_sp500_monthly(self):
-        required_series = [MyData.sp500_div_yield_month]
-        di = DataImporter()
-        df = di.get_selected_series_as_df(required_series)
-        fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(di, MyData.sp500_div_reinvest_month)
-
-        # shorten the curve using only n periods
-        n = 300
-
-        x = df.index.values
-        m = len(x) - n
-        x = x[m:]
-        y = df[MyData.sp500_div_yield_month].astype(float).to_numpy()
-        y = y[m:]*1000
-
-        mlp = MLPRegressor(hidden_layer_sizes=(2000, 2000, 2000), \
-                           max_iter=2000, solver='lbfgs', \
-                           alpha=0.01, activation='tanh', \
-                           random_state=8)
-
-        xint = x.astype(int64)
-        n = len(xint)
-        trained_model = mlp.fit(xint[:, None], y)
-        yfit = trained_model.predict(xint[:, None])  # predict(x)
-        print(yfit)
-
-        ax.plot(x, y, 'c', label='target')
-        ax.plot(x, yfit, 'b', label='fitted')
-
-        fig.set_figheight(7.5)
-        fig.set_figwidth(10)
-        # fig.tight_layout()  # otherwise the right y-label is slightly clipped
-        plt.legend()
-        plt.show()
-
-        '''
+    def test_run_gpu(self):
+        with tf.device('/gpu:0'):
+            run_model_fit()
