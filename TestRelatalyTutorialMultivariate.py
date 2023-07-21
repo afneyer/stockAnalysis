@@ -36,7 +36,7 @@ def import_data():
     # You can either use webreader or yfinance to load the data from yahoo finance
     # import pandas_datareader as webreader
     # df = webreader.DataReader(symbol, start=start_date, end=end_date, data_source="yahoo")
-
+    import yfinance as yf  # Alternative package if webreader does not work: pip install yfinance
     df = yf.download(symbol, start=start_date, end=end_date)
 
     # Create a quick overview of the dataset
