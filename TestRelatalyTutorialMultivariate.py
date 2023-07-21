@@ -18,6 +18,7 @@ from sklearn.preprocessing import RobustScaler, \
     MinMaxScaler  # This Scaler removes the median and scales the data according to the quantile range to normalize the price data
 import seaborn as sns  # Visualization
 from tensorflow.python.client import device_lib
+import yfinance as yf  # Alternative package if webreader does not work: pip install yfinance
 
 sns.set_style('white', {'axes.spines.right': False, 'axes.spines.top': False})
 
@@ -35,7 +36,7 @@ def import_data():
     # You can either use webreader or yfinance to load the data from yahoo finance
     # import pandas_datareader as webreader
     # df = webreader.DataReader(symbol, start=start_date, end=end_date, data_source="yahoo")
-    import yfinance as yf  # Alternative package if webreader does not work: pip install yfinance
+
     df = yf.download(symbol, start=start_date, end=end_date)
 
     # Create a quick overview of the dataset
@@ -268,3 +269,13 @@ class MyTestCase(unittest.TestCase):
 
     def test_run_tutorial(self):
         run_tutorial()
+
+    def test_train_cpu(self):
+        with tf.device('/cpu:0'):
+            run_tutorial()
+
+    def test_run_gpu(self):
+        with tf.device('/gpu:0'):
+            run_tutorial()
+
+
