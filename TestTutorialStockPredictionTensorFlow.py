@@ -67,7 +67,7 @@ BIDIRECTIONAL = False
 LOSS = "huber_loss"
 OPTIMIZER = "adam"
 BATCH_SIZE = 64
-EPOCHS = 10
+EPOCHS = 2
 # EPOCHS = 500
 # Amazon stock market
 ticker = "AMZN"
@@ -391,7 +391,8 @@ class TestTensorFlow(TestCase):
 
     def test_train_cpu(self):
         with tf.device('/cpu:0'):
-            run_model_fit()
+            data, model = run_model_fit()
+            run_model_evaluation(data, model)
 
     def test_run_gpu(self):
         with tf.device('/gpu:0'):

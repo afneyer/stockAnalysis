@@ -31,8 +31,12 @@ random.seed(314)
 
 # Setting the timeframe for the data extraction
 # end_date =  date.today().strftime("%Y-%m-%d")
-end_date = '2020-01-01'
+
 start_date = '2010-01-01'
+end_date = '2020-01-01'
+period = 'day'
+predict_periods = 1
+extra_graph_periods = 100*predict_periods
 
 # Getting NASDAQ quotes
 stockname = 'NASDAQ'
