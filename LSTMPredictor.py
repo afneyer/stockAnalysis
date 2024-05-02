@@ -1,25 +1,23 @@
+import os
+import pandas as pd
+import random
 import tensorflow as tf
+import time
+import yahoo_fin.stock_info as si
+from collections import deque
+from keras.callbacks import ModelCheckpoint, TensorBoard
+from keras.layers import LSTM, Dense, Dropout, Bidirectional
+from keras.models import Sequential
 # import tensorflow.python.keras.models
 # from keras.layers import Bidirectional
 from matplotlib import pyplot as plt
-from keras.models import Sequential
-from keras.layers import LSTM, Dense, Dropout, Bidirectional
-from keras.callbacks import ModelCheckpoint, TensorBoard
 # from tensorflow.python.keras import Sequential
 # from tensorflow.python.keras.layers import LSTM, Dense, Dropout
 # from tensorflow.python.keras.callbacks import ModelCheckpoint, TensorBoard
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
-import yahoo_fin.stock_info as si
-from collections import deque
-import time
-
-import os
-import numpy as np
-import pandas as pd
-import random
-
 from tensorflow.python.client import device_lib
+import numpy as np
 
 
 class LSTMPredictor:

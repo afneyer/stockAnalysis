@@ -29,4 +29,6 @@ class TestTensorFlow(TestCase):
         with tf.device('/gpu:0'):
             lp = LSTMPredictor()
             lp.EPOCHS = 1
-            lp.run_model_fit()
+            data, model = lp.run_model_fit()
+            lp.run_model_evaluation(data, model)
+

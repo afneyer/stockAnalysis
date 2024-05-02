@@ -70,7 +70,7 @@ def print_df(df: DataFrame, descript: str = 'No Description') -> None:
 
 class DataImporter:
     __data_dict: DataFrame
-    # contains the list of loaded data frames accessed the name of the series
+    # contains the list of loaded data frames accessed by the name of the series
     __series_list: dict
     __all_data: DataFrame
 
@@ -112,7 +112,7 @@ class DataImporter:
                     print('---Merging df with ' + fs_id)
                     print_df(df,'Base Dataframe')
                     print_df(df1,'Merging Dataframe')
-                    df = pd.merge(df, df1, left_index=True, right_index=True, how='outer')
+                    df = pd.merge(df, df1, left_index=True, right_index=True, how='inner')
                     print(df)
 
         return df
@@ -160,6 +160,7 @@ class DataImporter:
         series.name = url
         df = series.to_frame(name='Value')
         df.index.name = 'Date'
+        df = df.interpolate(method='cubicspline')
         return df
 
     def get_total_return_from_yahoo(self, url):

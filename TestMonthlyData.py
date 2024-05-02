@@ -15,6 +15,35 @@ from NumUtilities import return_over_number_periods
 def save_figure(label: str, plot):
     plot.savefig('./plots/' + 'sp500_plus_' + label + '.pdf', format='pdf', bbox_inches="tight")
 
+def cross_corr(s1,s2,window=50,max_lags= 10):
+
+    if len(s1) != len(s2):
+        raise(ValueError('S1 and S2 have different lengths'))
+    if max_lags > len(s1):
+        raise(ValueError('max_lags has to be less than the length of s1 // 2 i.e.' + str(len(s1))))
+    if window > (len(s1)-max_lags)//2:
+        raise(ValueError('window has to be smaler than the length of s1 // 2 i.e.' + str(len(s1)-max_lags//2)))
+
+    result = np.zeros(2*max_lags+1)
+    j=0
+    # compute the window range for x
+    middle = len(s1)//2
+    w1 = middle-window
+    w2 = middle+window
+    x = s1[w1:w2]
+    for i in range(-max_lags,+max_lags,1):
+        y = s2[w1+i:w2+i]
+        print(x)
+        print(y)
+        # least square error produces no results (same for all values)
+        # z = np.sum((x-y)**2)
+        z = np.sum(x*y)
+        result[j]=z
+        print(z)
+        print(i)
+        print(j)
+        j+=1
+    return result
 
 class TestMonthlyData(TestCase):
 
@@ -31,8 +60,16 @@ class TestMonthlyData(TestCase):
         plot.grid('on', which='minor', axis='y')
         plt.show()
 
+    def test_plot_earnings_vs_dividend_yield(self):
+        required_series = [MyData.sp500_div_yield_month,MyData.sp500_earnings_yield]
+        di = DataImporter()
+
+        df = di.get_selected_series_as_df(required_series)
+
+
     def test_plot_of_earnings_return(self):
-        required_series = [MyData.sp500_earnings_growth, MyData.sp500_pe_ratio_month]
+        required_series = [MyData.sp500_earnings_growth, MyData.sp500_earnings_yield, MyData.sp500_pe_ratio_month,MyData.sp500_div_yield_month,
+                           MyData.sp500_real_price_month]
         di = DataImporter()
 
         df = di.get_selected_series_as_df(required_series)
@@ -42,10 +79,18 @@ class TestMonthlyData(TestCase):
         tret = df[MyData.sp500_earnings_growth].squeeze().to_numpy()
         ax.plot(df.index.values, tret, 'b', label=label)
 
-        label = "PE-Ratio"
-        pe = df[MyData.sp500_pe_ratio_month].squeeze().to_numpy()
+        label = "S&P Stock Price"
+        tret = df[MyData.sp500_real_price_month].squeeze().to_numpy()
+        ax.plot(df.index.values, tret, 'm', label=label)
+
+        label = "Earnings Yield"
+        ey = df[MyData.sp500_earnings_yield].squeeze().to_numpy()
         ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
-        ax2.plot(df.index.values, pe, 'c', label=label)
+        ax2.plot(df.index.values, ey, 'c', label=label)
+
+        label = "Dividend Yield"
+        dy = df[MyData.sp500_div_yield_month].squeeze().to_numpy() # instantiate a second axes that shares the same x-axis
+        ax2.plot(df.index.values, dy, 'y', label=label)
 
         fig.set_figheight(7)
         fig.set_figwidth(10)
@@ -53,8 +98,10 @@ class TestMonthlyData(TestCase):
         plt.legend()
         plt.show()
 
+
+
     def test_plot_of_earnings_and_dividend_yield(self):
-        required_series = [MyData.sp500_earnings_yield, MyData.sp500_div_yield_month]
+        required_series = [MyData.sp500_earnings_yield, MyData.sp500_div_yield_month, MyData.sp500_pe_ratio_month]
         di = DataImporter()
         df = di.get_selected_series_as_df(required_series)
         fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(di, MyData.sp500_div_reinvest_month)
@@ -65,8 +112,13 @@ class TestMonthlyData(TestCase):
         ax2.plot(df.index.values, ey, 'b', label=label)
 
         label = "Dividend Yield"
-        ey = df[MyData.sp500_div_yield_month].squeeze().to_numpy() / 100.0
+        ey = df[MyData.sp500_div_yield_month].squeeze().to_numpy()
         ax2.plot(df.index.values, ey, 'c', label=label)
+
+        label = "Inverse PE-Ratio"
+        pe = df[MyData.sp500_pe_ratio_month].squeeze().to_numpy()
+        pe = np.reciprocal(pe) * 100
+        ax2.plot(df.index.values, ey, 'r', label=label)
 
         fig.set_figheight(7)
         fig.set_figwidth(10)
@@ -195,7 +247,7 @@ class TestMonthlyData(TestCase):
         # fig, ax = DataPlotUtil.plot_sp500_monthly_logscale(df)
 
         # Compute n-period return
-        n = 84  # one month returns
+        n = 1  # one month returns
         xaxis = df.index.values
         y = df[MyData.sp500_div_reinvest_month].squeeze().to_numpy()
         x1, y1 = return_over_number_periods(n, xaxis, y)
@@ -227,3 +279,101 @@ class TestMonthlyData(TestCase):
         plt.legend(loc='upper right')
         save_figure(label, plt)
         plt.show()
+
+    def test_cross_correlation_between_indices(self):
+        s1 = MyData.sp500_div_reinvest_month
+        s2 = MyData.cpi_urban_month
+
+        df = DataImporter().get_selected_series_as_df([s1,s2])
+        sp500_percent_inc = df[MyData.sp500_div_reinvest_month].pct_change()
+
+        os = df[s2]
+
+        y = sp500_percent_inc.to_numpy()
+        # remove first element
+        y = y[1:]
+
+        x = os.to_numpy()
+        # remove last element
+        x = x[0:len(x)-1]
+
+        # Change the lenght of the series
+        num_period = 120
+        x = x[len(x)-num_period:len(x)]
+        y = y[len(y)-num_period:]
+
+        plt.scatter(x, y)
+
+        plt.show()
+
+        maxLags = 60
+
+        fig, ax = plt.subplots(figsize=(10, 7.5))
+        plt.xcorr(x, y, usevlines=True, normed=True, maxlags=maxLags)
+
+        plt.title("Cross Correlation of SP500 Total Monthly Return and "+ s2)
+        plt.legend()
+        plt.show()
+
+        z = cross_corr(x,y,window=150,max_lags=50)
+
+        fig, ax = plt.subplots()
+
+        label = "Least Squares Error Correlation"
+        x = np.linspace(0,len(z)-1,len(z))
+        ax2 = ax.twinx()  # instantiate a second axes that shares the same x-axis
+        ax2.plot(x, z, 'b', label=label)
+        plt.show()
+
+        plt.acorr(y, usevlines=True, normed=True, maxlags=maxLags)
+        # plt.show()
+
+    def test_cross_correlation_for_forecast(self):
+        # x predicts y
+        time = np.arange(0,90,1)
+        x = np.logspace(0,0.5,100)
+
+        np.random.seed(10)
+        r = np.random.normal(loc=0.0, scale=0.05, size=100)
+        x = x + r*x
+
+        y = x[0:90]
+        x = x[10:]
+        plt.plot(time,x)
+        plt.plot(time,y)
+        plt.show()
+
+        maxLags = 80
+        plt.xcorr(x, y, usevlines=True, normed=True, maxlags=maxLags)
+        plt.show()
+
+        x = np.diff(x) / x[0:len(x)-1]
+        y = np.diff(y) / y[0:len(y)-1]
+        time = time[0:len(time)-1]
+
+        plt.plot(time, x, label='x')
+        plt.plot(time, y, label='y')
+        plt.title("X predicts Y by 10 days")
+        plt.legend(loc='upper left')
+        plt.show()
+
+        maxLags = 80
+        plt.xcorr(x, y, usevlines=True, normed=True, maxlags=maxLags)
+        plt.show()
+
+    def test_cross_corr(self):
+        x = np.array([3.0,4.0,5.0,6.0,5.0,4.0,3.0,2.0,1.0,0.0,0.0,0.0])
+        print(x)
+        y = np.array([0.0,1.0,2.0,3.0,4.0,5.0,6.0,5.0,4.0,3.0,2.0,1.0])
+        print(y)
+        z = cross_corr(x,y,window=3,max_lags=3)
+
+
+
+
+
+
+
+
+
+

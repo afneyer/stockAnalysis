@@ -21,24 +21,25 @@ class TestDailyData(TestCase):
         plt.show()
 
     def test_monthly_data_scatter_plot_with_n_period_return(self):
-        df = DataImporter().get_series_as_df(MyData.sp500_div_reinvest_day)
+        data_series = MyData.sp500_div_reinvest_month
+        df = DataImporter().get_series_as_df(data_series)
 
         # Compute n-period return
         n = 1# one month returns
         xaxis = df.index.values
-        y = df[MyData.sp500_div_reinvest_day].squeeze().to_numpy()
+        y = df[data_series].squeeze().to_numpy()
         x1, y1 = return_over_number_periods(n, xaxis, y)
 
-        # y2 next n-month return
-        y3 = np.array(y1[n:], dtype=float)
-        y4 = np.array(y1[:-n], dtype=float)
+        # next n-month return
+        y3 = np.array(y1[:-n], dtype=float)
+        y4 = np.array(y1[n:], dtype=float)
 
         label = str(n) + "-day return based previous n-day return"
         m, b = np.polyfit(y3, y4, 1)
         y3min = y3.min()
         y3max = y3.max()
 
-        fig, ax = plt.subplots(figsize=(10, 7.5))
+        fig, ax = plt.subplots(figsize=(10, 10))
 
         ax.scatter(y3, y4, 1)
 
@@ -56,12 +57,13 @@ class TestDailyData(TestCase):
         plt.show()
 
     def test_histogram_of_daily_returns(self):
-        df = DataImporter().get_series_as_df(MyData.sp500_div_reinvest_day)
+        series_name = MyData.sp500_div_reinvest_month
+        df = DataImporter().get_series_as_df(series_name)
 
         # Compute n-period return
-        n = 731# one month returns
+        n = 1# one month returns
         xaxis = df.index.values
-        y = df[MyData.sp500_div_reinvest_day].squeeze().to_numpy()
+        y = df[series_name].squeeze().to_numpy()
         x1, y1 = return_over_number_periods(n, xaxis, y)
 
         fig, ax = plt.subplots(figsize=(10, 7.5))

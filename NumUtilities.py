@@ -17,7 +17,7 @@ def return_over_number_periods(n: int, xin: ndarray, yin: ndarray) -> Tuple[ndar
 def total_return(price: ndarray, div: ndarray) -> numpy:
     """
     Calculate the "Total Return" of a stock when dividends are
-    reinvested in the stock.
+    reinvested in the stock. The dividends are the actual value (not percentage)
 
     The formula is:
 

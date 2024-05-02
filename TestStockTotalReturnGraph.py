@@ -16,3 +16,6 @@ class TestTotalReturnGraph(unittest.TestCase):
     def test_dea_hasi_spy(self):
         totalReturnGraph(['dea','hasi','spy'])
 
+    def test_real_interest_rates(self):
+        totalReturnGraph(['SCHP'])
+
