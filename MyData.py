@@ -1,3 +1,4 @@
+
 class MyData:
     # data types
     quandle = 'quandle'
@@ -10,6 +11,9 @@ class MyData:
     sp500_pe_ratio_month = 'SP500_PE_Ratio_Month'
     sp500_div_yield_month = 'SP500_Div_Yield_Month'
     sp500_real_price_month = 'SP500_Real_Price_Month'
+    sp500_pe_ratio_month_quandle = 'SP500_PE_Ratio_Month_Quandle'
+    sp500_div_yield_month_quandle = 'SP500_Div_Yield_Month_Quandle'
+    sp500_real_price_month_quandle = 'SP500_Real_Price_Month_Quandle'
     cpi_urban_month = 'CPI_Urban_Month'
     ten_year_treasury_month = 'Ten_Year_Treasury'
     sp500_div_reinvest_month = 'SP500_Div_Reinvest_Month'
@@ -47,6 +51,5 @@ class MyData:
         # for computed ids the url is a list of dependencies (i.e. a list of data series ids)
         [sp500_div_reinvest_month, compute, [sp500_real_price_month, sp500_div_yield_month]],
         [sp500_earnings_growth, compute, [sp500_pe_ratio_month, sp500_real_price_month]],
-        [sp500_earnings_yield, compute, [sp500_pe_ratio_month, sp500_real_price_month]],
-
+        [sp500_earnings_yield, compute, [sp500_pe_ratio_month, sp500_real_price_month]]
     ]

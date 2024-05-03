@@ -68,6 +68,7 @@ def print_df(df: DataFrame, descript: str = 'No Description') -> None:
     print('------ End DataFrame Info for ' + descript + '-----')
 
 
+# noinspection PyMethodMayBeStatic
 class DataImporter:
     __data_dict: DataFrame
     # contains the list of loaded data frames accessed by the name of the series
@@ -117,11 +118,6 @@ class DataImporter:
 
         return df
 
-    def import_us_market(self) -> DataFrame:
-        df: DataFrame
-        df = quandl.get('MULTPL/SP500_PE_RATIO_MONTH', )
-        return df
-
     def get_data_from_quandle(self, url):
         df = quandl.get(url)
         return df
@@ -152,6 +148,7 @@ class DataImporter:
         else:
             df['Value'] = pd.to_numeric(df['Value'])
         df = df.set_index('Date')
+        df = df.sort_index()
 
         return df
 
@@ -185,9 +182,8 @@ class DataImporter:
         else:
             df = df.merge(df_ticker, how='inner', on='Date')
         restore_date_index(df)
-        print(df)
         scale_to_start_value(df)
-        print(df)
+        df.tz_localize(None)
         return df
 
     def compute_series(self, fs_id):
@@ -250,13 +246,14 @@ class DataImporter:
         elif fs_type == MyData.yahoo:
             print("---Importing from " + MyData.yahoo, fs_id)
             df = self.get_total_return_from_yahoo(url_str)
-        elif fs_type == 'compute':
+        elif fs_type == MyData.compute:
             print("---Computing Series: ", fs_id)
             df = self.compute_series(fs_id)
         df = df.rename(columns={'Value': fs_id})
 
-        # make adjustment for specific data series
-        df = self.adjust_sequence(fs_id, df)
+        # interpolate all directly imported sequences, not computed ones
+        if fs_type != MyData.compute:
+            df = self.adjust_sequence(fs_id, df)
 
         # save the sequence in a text file
         df.to_csv('./output/' + fs_id + ".csv")
@@ -268,29 +265,30 @@ class DataImporter:
     def adjust_sequence(self, fs_id, df):
 
         # adjustments based on general criteria
+        # Todo questionable: assumes yahoo data is always daily
         if self.get_url_type(fs_id) == MyData.yahoo:
             df = df.astype({fs_id: float})
-            df1 = df.asfreq('D')
-            df = df1.interpolate(method='cubicspline')
-
+            df = df.asfreq('D')
 
         # adjustments based on specific series
         if fs_id == MyData.sp500_pe_ratio_month:
-            return adjust_dates_to_start_of_month(df)
+            df1 = adjust_dates_to_start_of_month(df)
         elif fs_id == MyData.us_gdp_nominal:
             # add additional data points and use cubit spline interpolation to set data
             df1 = df.asfreq('MS')
-            df2 = df1.interpolate(method='cubicspline')
-            return df2
         elif fs_id == MyData.sp500_div_yield_month:
             df[MyData.sp500_div_yield_month] = df[MyData.sp500_div_yield_month] / 100.0
-            return adjust_dates_to_start_of_month(df)
+            df1 = adjust_dates_to_start_of_month(df)
         elif fs_id == MyData.sp500_real_price_month:
-            return adjust_dates_to_start_of_month(df)
+            df1 = adjust_dates_to_start_of_month(df)
         elif fs_id == MyData.ten_year_treasury_month:
-            return adjust_dates_to_start_of_month(df)
+            df1 = adjust_dates_to_start_of_month(df)
         else:
-            return df
+            df1 = df
+
+        # always create missing values
+        df2 = df1.interpolate(method='cubicspline')
+        return df2
 
     def get_url(self, fs_id):
         return self.__data_dict['url'].get(fs_id)
@@ -313,6 +311,8 @@ def check_all_dates_daily(df) -> bool:
     return False not in all_daily
 
 
-def check_all_values_contiguous(df: DataFrame) -> bool:
+def check_all_dates_daily_contiguous(df: DataFrame) -> bool:
     df1 = df[~df[df.columns[0]].isna()]
     return check_all_dates_daily(df1)
+
+
