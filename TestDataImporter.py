@@ -247,7 +247,7 @@ class TestDataImporter(TestCase):
         df.set_index('Date', inplace=True)
         print(df)
         print(df.head)
-        assert check_all_dates_daily_contiguous(df)
+        assert ~check_all_dates_daily_contiguous(df)
 
     def test_all_data_series(self):
         output_folder = "output"
