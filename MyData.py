@@ -14,8 +14,6 @@ class MyData:
     sp500_pe_ratio_month_quandle = 'SP500_PE_Ratio_Month_Quandle'
     sp500_div_yield_month_quandle = 'SP500_Div_Yield_Month_Quandle'
     sp500_real_price_month_quandle = 'SP500_Real_Price_Month_Quandle'
-    cpi_urban_month = 'CPI_Urban_Month'
-    ten_year_treasury_month = 'Ten_Year_Treasury'
     sp500_div_reinvest_month = 'SP500_Div_Reinvest_Month'
     sp500_earnings_growth = 'SP500_Growth_Based_On_Earnings'
     sp500_earnings_yield = "SP500_Earnings_Annual_Yield_Monthly"
@@ -81,8 +79,6 @@ class MyData:
         [sp500_pe_ratio_month, quandle, 'MULTPL/SP500_PE_RATIO_MONTH'],
         [sp500_div_yield_month, quandle, 'MULTPL/SP500_DIV_YIELD_MONTH'],
         [sp500_real_price_month, quandle, 'MULTPL/SP500_REAL_PRICE_MONTH'],
-        [cpi_urban_month, multpl, 'https://www.multpl.com/cpi/table/by-month'], # TODO now duplicate
-        [ten_year_treasury_month, multpl, 'https://www.multpl.com/10-year-treasury-rate/table/by-month'],
         [us_gdp_nominal, fred, 'GDP'],
         [ten_year_minus_two_year, fred, 'T10Y2Y'],
         [int_one_month_cm, fred, 'DGS1MO'],
