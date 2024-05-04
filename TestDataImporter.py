@@ -8,7 +8,7 @@ from numpy.ma.testutils import approx
 from pandas import DataFrame
 
 from DataImporter import DataImporter, adjust_dates_to_start_of_month, restore_date_index, \
-    change_to_row_index, all_dates_month_start, check_all_dates_daily, check_all_dates_daily_contiguous
+    change_to_row_index, all_dates_month_start, check_all_dates_daily, check_all_dates_daily_contiguous, print_df
 from MyData import MyData as Md
 
 
@@ -80,11 +80,6 @@ class TestDataImporter(TestCase):
 
         # ts = pd.Timestamp('2022-12-01') TODO
         # assert approx(df[fs_id][ts], 296.80)
-    def test_specific_series(self):
-        fs_id = Md.cpi_urban_month
-        di = DataImporter()
-        df = di.get_series_as_df(fs_id)
-        display(df.head())
 
     def test_adjust_dates_quandle(self):
         di = DataImporter()
@@ -280,3 +275,10 @@ class TestDataImporter(TestCase):
             out_file.write("----------------------------------------------------------------------\n\n")
 
         out_file.close()
+
+    def test_specific_series(self):
+        fs_id = Md.mult_eco_us_population
+        di = DataImporter()
+        df = di.get_series_as_df(fs_id)
+        print_df(df)
+

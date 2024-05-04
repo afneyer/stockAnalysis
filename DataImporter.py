@@ -107,14 +107,14 @@ class DataImporter:
                 df1 = self.get_series_as_df(fs_id)
                 if df.empty:
                     df = df1
-                    print('---Setting initial df before merging')
-                    print_df(df)
+                    # print('---Setting initial df before merging')
+                    # print_df(df)
                 else:
-                    print('---Merging df with ' + fs_id)
-                    print_df(df,'Base Dataframe')
-                    print_df(df1,'Merging Dataframe')
+                    # print('---Merging df with ' + fs_id)
+                    # print_df(df,'Base Dataframe')
+                    # print_df(df1,'Merging Dataframe')
                     df = pd.merge(df, df1, left_index=True, right_index=True, how='inner')
-                    print(df)
+                    # print(df)
 
         return df
 
@@ -142,11 +142,23 @@ class DataImporter:
         df['Value'] = df['Value'].str.rstrip(',')
 
         # transform to numeric values
+        # remove commas and empty strings before numeric conversion
+        df = df.replace(r'^$', np.nan, regex=True)
+        df['Value'] = df['Value'].str.replace(',', '')
         # check whether the series in percentage
-        if df['Value'].str.contains('%').any():
-            df['Value'] = df['Value'].str.rstrip('%').astype('float') / 100.0
-        else:
-            df['Value'] = pd.to_numeric(df['Value'])
+        if pd.api.types.is_string_dtype(df['Value'].dropna()):
+            if df['Value'].str.contains('%').any():
+                df['Value'] = df['Value'].str.rstrip('%')
+                df['Value'] = df['Value'].astype('float') / 100.0
+            elif df['Value'].str.contains('trillion').any():
+                df['Value'] = df['Value'].str.rstrip('trillion')
+                df['Value'] = df['Value'].astype('float') * 1e12
+            elif df['Value'].str.contains('million').any():
+                df['Value'] = df['Value'].str.rstrip('million')
+                df['Value'] = df['Value'].astype('float') * 1e6
+            else:
+                df['Value'] = pd.to_numeric(df['Value'])
+        # reset the index
         df = df.set_index('Date')
         df = df.sort_index()
 
@@ -195,11 +207,11 @@ class DataImporter:
             np_sp500 = df[MyData.sp500_real_price_month].astype(float).to_numpy()
             np_div_value = np_div_yield * np_sp500 / 12.0
             np_tot_return = NumUtilities.total_return(np_sp500, np_div_value)
-            print(np_tot_return)
+            # print(np_tot_return)
             df = pd.DataFrame(data=[df.index.values, np_tot_return],
                               index=['Date', MyData.sp500_div_reinvest_month]).T
             df.set_index('Date', inplace=True)
-            print(df)
+            # print(df)
             return df
 
         if fs_id == MyData.sp500_earnings_growth:
@@ -225,7 +237,7 @@ class DataImporter:
                               index=['Date', MyData.sp500_earnings_yield]).T
             df.set_index('Date', inplace=True)
             df = df.astype('float')
-            print(df.dtypes)
+            # print(df.dtypes)
             return df
 
     def __import_series(self, fs_id):
