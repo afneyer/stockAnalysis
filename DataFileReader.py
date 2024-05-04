@@ -1,7 +1,9 @@
 import pandas as pd
+from IPython.core.hooks import deprecated
 from pandas import DataFrame
 
 
+@deprecated
 class DataFileReader:
 
     def read_us_market_visualizations(self) -> DataFrame:
