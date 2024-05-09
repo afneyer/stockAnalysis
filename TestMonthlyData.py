@@ -270,3 +270,12 @@ class TestMonthlyData(TestCase):
         max_lags = 80
         plt.xcorr(x, y, usevlines=True, normed=True, maxlags=max_lags)
         plt.show()
+
+    def test_compare_multpl_and_yahoo_sp500(self):
+        di = DataImporter()
+        df = di.get_selected_series_as_df([MyData.sp500_div_reinvest_month,MyData.yahoo_spy_div_reinvest])
+
+        scale_factor = df[MyData.yahoo_spy_div_reinvest].iloc[0] / df[MyData.sp500_div_reinvest_month].iloc[0]
+        df[MyData.sp500_div_reinvest_month] = df[MyData.sp500_div_reinvest_month] * scale_factor
+
+        df.print()

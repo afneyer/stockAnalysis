@@ -1,24 +1,15 @@
-import unittest
 from unittest import TestCase
 
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy import ndarray
 
 import DataPlotUtil
-import NumUtilities
-from DataFileReader import DataFileReader
 from DataImporter import DataImporter
 from MyData import MyData
 from NumUtilities import return_over_number_periods
 
 
 class TestDailyData(TestCase):
-
-    def test_sp500_total_return_basic(self):
-        di = DataImporter()
-        DataPlotUtil.plot_sp500_monthly_logscale(di, MyData.sp500_div_reinvest_day)
-        plt.show()
 
     def test_monthly_data_scatter_plot_with_n_period_return(self):
         data_series = MyData.sp500_div_reinvest_month

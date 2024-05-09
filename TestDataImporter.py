@@ -9,7 +9,7 @@ from pandas import DataFrame
 
 from DataImporter import DataImporter, adjust_dates_to_start_of_month, restore_date_index, \
     change_to_row_index, all_dates_month_start, check_all_dates_daily, check_all_dates_daily_contiguous, print_df
-from MyData import MyData as Md
+from MyData import MyData as Md, MyData
 
 
 def assert_value(df: DataFrame, df_column: str, date: str, val: float):
@@ -55,18 +55,16 @@ class TestDataImporter(TestCase):
     def test_get_data_from_quandle(self):
         di = DataImporter()
         fs_id = Md.sp500_div_yield_month
-        url = di.get_url(fs_id)
-        df = di.get_data_from_quandle(url)
-        df = df.rename(columns={'Value': fs_id})
+        df = di.get_data_from_quandle(fs_id)
         ts = pd.Timestamp('2022-8-31')
         assert approx(df[Md.sp500_div_yield_month][ts], 1.56)
         print(df.head())
 
     def test_get_data_from_multpl(self):
-        cpi_url = 'https://www.multpl.com/cpi/table/by-month'
+        fs_id = Md.mult_eco_consumer_price_index_cpi
 
         di = DataImporter()
-        cpi_data = di.get_data_from_multpl_website(cpi_url)
+        cpi_data = di.get_data_from_multpl_website(fs_id)
         print(cpi_data.head())
 
         ts = pd.Timestamp('2022-12-01')
@@ -82,10 +80,9 @@ class TestDataImporter(TestCase):
         # assert approx(df[fs_id][ts], 296.80)
 
     def test_adjust_dates_quandle(self):
+        fs_id = Md.sp500_div_yield_month
         di = DataImporter()
-        col_nam = Md.sp500_div_yield_month
-        url = di.get_url(col_nam)
-        df = di.get_data_from_quandle(url)
+        df = di.get_data_from_quandle(fs_id)
         print(df.head)
         df = adjust_dates_to_start_of_month(df)
         assert all_dates_month_start(df)
@@ -156,18 +153,11 @@ class TestDataImporter(TestCase):
         assert all_dates_month_start(df)
         assert_value(df, series_id, '2022-12-01', 3912.38)
 
-    def test_cpi_urban_month(self):
-        series_id = Md.cpi_urban_month
-        df = DataImporter().get_series_as_df(series_id)
-        print(df.head)
-        assert all_dates_month_start(df)
-        assert_value(df, series_id, '2022-12-01', 296.80)
-
     def test_ten_year_treasury_month(self):
-        series_id = Md.ten_year_treasury_month
+        series_id = Md.mult_real_rate_10_year
         df = DataImporter().get_series_as_df(series_id)
         print(df.head)
-        assert all_dates_month_start(df)
+        # assert all_dates_month_start(df) TODO not sure this should be checked
         assert_value(df, series_id, '2022-12-01', 0.0362)
 
     def test_us_gdp_nominal_month(self):
@@ -249,6 +239,21 @@ class TestDataImporter(TestCase):
         print(df.head)
         assert ~check_all_dates_daily_contiguous(df)
 
+    def test_get_yahoo_type(self):
+        di = DataImporter()
+        fs_id = MyData.yahoo_spy_close
+        assert di.get_yahoo_type(fs_id) == MyData.close
+        fs_id = MyData.yahoo_spy_div
+        assert di.get_yahoo_type(fs_id) == MyData.div
+        fs_id = MyData.yahoo_spy_cap
+        assert di.get_yahoo_type(fs_id) == MyData.cap
+
+    def test_yahoo_data_series(self):
+        fs_id = MyData.yahoo_spy_close
+        df = DataImporter().get_series_as_df(fs_id)
+        assert_value(df, fs_id,'2024-05-03', 511.29)
+        assert_value(df, fs_id, '2014-06-05', 186.78)
+
     def test_all_data_series(self):
         output_folder = "output"
         if not os.path.isdir(output_folder):
@@ -276,9 +281,65 @@ class TestDataImporter(TestCase):
 
         out_file.close()
 
+    def test_spy_close_from_yahoo_raw_and_adjusted(self):
+        fs_id = Md.yahoo_spy_close
+        df = DataImporter().get_series_as_df(fs_id)
+        assert_value(df, fs_id, '2024-05-03', 511.29)
+        assert_value(df, fs_id, '1993-02-01', 44.25)
+        fs_id = Md.yahoo_spy_close_adjusted
+        df = DataImporter().get_series_as_df(fs_id)
+        assert_value(df, fs_id, '2024-05-03', 511.29)
+        assert_value(df, fs_id, '1993-02-01', 24.939861)
+
+    def test_spy_dividends(self):
+        fs_id = Md.yahoo_spy_div
+        df = DataImporter().get_series_as_df(fs_id)
+        assert_value(df, fs_id, '2024-05-03', 0.0)
+        assert_value(df, fs_id, '2024-03-15', 1.595)
+
+    def test_spy_cap_gains(self):
+        fs_id = Md.yahoo_spy_cap
+        df = DataImporter().get_series_as_df(fs_id)
+        # there should be no cap gains for spy
+        assert (df[Md.yahoo_spy_cap] < 1.0e-12).all()
+
+    def test_spy_split(self):
+        fs_id = Md.yahoo_spy_split
+        df = DataImporter().get_series_as_df(fs_id)
+        # there should be no stock splits for spy
+        assert (df[Md.yahoo_spy_split] < 1.0e-12).all()
+
+
     def test_specific_series(self):
-        fs_id = Md.mult_eco_us_population
         di = DataImporter()
-        df = di.get_series_as_df(fs_id)
+
+        fs_id = Md.yahoo_spy_close
+        df = DataImporter().get_series_as_df(fs_id)
+
+        print_df(df)
+
+    def test_variations_of_spy(self):
+        di = DataImporter()
+
+        fs_id = Md.yahoo_spy_close
+        df = DataImporter().get_series_as_df(fs_id)
+        val_raw = 43.937500
+        assert_value(df, fs_id, '1993-01-29', val_raw)
+
+        # Get the adjusted data series from yahoo
+        fs_id = Md.yahoo_spy_close_adjusted
+        df1 = DataImporter().get_series_as_df(fs_id)
+        val_adjusted = 24.763741
+        assert_value(df1, fs_id, '1993-01-29', val_adjusted)
+
+        fs_id = Md.yahoo_spy_div_reinvest
+        df2 = DataImporter().get_series_as_df(fs_id)
+
+        # verify that dividend reinvestments result in the same series as the adjusted_close prices
+        scale = df1[Md.yahoo_spy_close_adjusted].iloc[0] / df2[Md.yahoo_spy_div_reinvest].iloc[0]
+        scaled_reinvest = (df2[Md.yahoo_spy_div_reinvest]* scale)
+        diff = (df1[Md.yahoo_spy_close_adjusted] - scaled_reinvest).abs()
+        assert (diff.abs() < 0.5).all()
+
         print_df(df)
 

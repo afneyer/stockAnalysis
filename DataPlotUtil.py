@@ -5,16 +5,17 @@ import pandas as pd
 from matplotlib import figure, pyplot as plt
 from matplotlib import axes
 from pandas import DataFrame, Series
+from pandas.core import series
 
 from DataImporter import DataImporter
 from MyData import MyData
 from NumUtilities import return_over_number_periods
 
 
-def plot_sp500_monthly_logscale(di: DataImporter, fs_id):  # -> Tuple[figure, axes]:
-    fs: Series = di.get_series_as_series(fs_id)
-    y = di.get_series_as_numpy(fs_id).astype(float)
-    dates = fs.index.values
+def plot_logscale_with_exponential_fit(ser: Series):  # -> Tuple[figure, axes]:
+    fs: Series = ser
+    y = ser.to_numpy(dtype=float)
+    dates = fs.index.values.astype(float)
     x = dates.astype(float)
 
     # print(np.where(~np.isfinite(x)))

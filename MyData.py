@@ -1,4 +1,3 @@
-
 class MyData:
     # data types
     quandle = 'quandle'
@@ -6,6 +5,14 @@ class MyData:
     compute = 'compute'
     fred = 'FRED'
     yahoo = 'yahoo'
+
+    # yahoo extensions
+    close = 'Close'
+    div = 'Dividends'
+    cap = 'Capital Gains'
+    split = 'Stock Splits'
+    close_adjusted = 'closeAdjusted'
+    div_reinvest = 'div_reinvest'
 
     # define all data series ids
     sp500_pe_ratio_month = 'SP500_PE_Ratio_Month'
@@ -17,6 +24,7 @@ class MyData:
     sp500_div_reinvest_month = 'SP500_Div_Reinvest_Month'
     sp500_earnings_growth = 'SP500_Growth_Based_On_Earnings'
     sp500_earnings_yield = "SP500_Earnings_Annual_Yield_Monthly"
+    yahoo_ticker = "yahoo_ticker"
     us_gdp_nominal = "Nominal_US_GDP_Quarterly"
     ten_year_minus_two_year = "10-Year Treasury Minus 2-Year Treasury Constant Maturity"
     int_one_month_cm = "1-Month Treasury Constant Maturity"
@@ -28,6 +36,14 @@ class MyData:
     int_ten_year_cm = "10-Year Treasury Constant Maturity"
     int_thirty_year_cm = "30-Year Treasury Constant Maturity"
     sp500_div_reinvest_day = "SP500 Dividends Reinvested Daily"
+
+    # fixed yahoo data series for spy
+    yahoo_spy_close = "yahoo_spy_" + close
+    yahoo_spy_div = "yahoo_spy_" + div
+    yahoo_spy_cap = "yahoo_spy_" + cap
+    yahoo_spy_close_adjusted = "yahoo_spy_" + close_adjusted
+    yahoo_spy_split = "yahoo_spy_" + split
+
     mult_eco_consumer_price_index_cpi = 'mult_eco_consumer_price_index_cpi'
     mult_eco_us_average_income = 'mult_eco_us_average_income'
     mult_eco_us_federal_debt_percent = 'mult_eco_us_federal_debt_percent'
@@ -48,7 +64,7 @@ class MyData:
     mult_real_rate_30_year = 'mult_real_rate_30_year'
     mult_real_rate_5_year = 'mult_real_rate_5_year'
     mult_sp500_book_value_per_share = "mult_sp500_book_value_per_share"
-    mult_sp500_dividend = "mult_sp500_dividend"
+    mult_sp500_dividend = "mult_sp500_dividend"  # This is the real dividend, not useful with historical prices
     mult_sp500_dividend_growth = "mult_sp500_dividend_growth"
     mult_sp500_dividend_yield = "mult_sp500_dividend_yield"
     mult_sp500_earnings = "mult_sp500_earnings"
@@ -75,6 +91,10 @@ class MyData:
     mult_trate_5_year = 'mult_trate_5_year'
     mult_trate_6_month = 'mult_trate_6_month'
 
+    # computed data series
+    sp500_div_reinvest_day = "SP500 Dividends Reinvested Daily"
+    yahoo_spy_div_reinvest = "yahoo_spy_" + div_reinvest
+
     urls = [
         [sp500_pe_ratio_month, quandle, 'MULTPL/SP500_PE_RATIO_MONTH'],
         [sp500_div_yield_month, quandle, 'MULTPL/SP500_DIV_YIELD_MONTH'],
@@ -89,14 +109,22 @@ class MyData:
         [int_five_year_cm, fred, 'DGS5'],
         [int_ten_year_cm, fred, 'DGS10'],
         [int_thirty_year_cm, fred, 'DGS30'],
-        [sp500_div_reinvest_day, yahoo, 'spy'],
+
+        # yahoo fixed data series
+        [yahoo_spy_close, 'yahoo', 'SPY'],
+        [yahoo_spy_div, 'yahoo', 'SPY'],
+        [yahoo_spy_cap, 'yahoo', 'SPY'],
+        [yahoo_spy_close_adjusted,'yahoo','SPY'],
+        [yahoo_spy_split,'yahoo','SPY'],
+
+        # multpl data series
         [mult_eco_consumer_price_index_cpi, multpl, 'https://www.multpl.com/cpi/table/by-month'],
         [mult_eco_us_average_income, multpl, 'https://www.multpl.com/us-average-income/table/by-month'],
         [mult_eco_us_federal_debt_percent, multpl, 'https://www.multpl.com/u-s-federal-debt-percent/table/by-month'],
         [mult_eco_us_gdp, multpl, 'https://www.multpl.com/us-gdp/table/by-month'],
         [mult_eco_us_gdp_growth_rate, multpl, 'https://www.multpl.com/us-real-gdp-growth-rate/table/by-month'],
         [mult_eco_us_home_prices, multpl,
-            'https://www.multpl.com/case-shiller-home-price-index-inflation-adjusted/table/by-month'],
+         'https://www.multpl.com/case-shiller-home-price-index-inflation-adjusted/table/by-month'],
         [mult_eco_us_inflation_rate, multpl, 'https://www.multpl.com/inflation/table/by-month'],
         [mult_eco_us_median_income, multpl, 'https://www.multpl.com/us-median-income/table/by-year'],
         [mult_eco_us_median_income_growth, multpl, 'https://www.multpl.com/us-median-income-growth/table/by-year'],
@@ -118,11 +146,11 @@ class MyData:
         [mult_sp500_earnings_yield, multpl, 'https://www.multpl.com/s-p-500-earnings-yield/table/by_quarter'],
         [mult_sp500_earnings_growth, multpl, 'https://www.multpl.com/s-p-500-earnings-growth/table/by-quarter'],
         [mult_sp500_real_earnings_growth, multpl,
-            'https://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter'],
+         'https://www.multpl.com/s-p-500-real-earnings-growth/table/by-quarter'],
         [mult_sp500_pe_ratio, multpl, 'https://www.multpl.com/s-p-500-pe-ratio/table/by-month'],
         [mult_sp500_historical_prices, multpl, 'https://www.multpl.com/s-p-500-historical-prices/table/by-month'],
         [mult_sp500_inflation_adjusted_prices, multpl,
-            'https://www.multpl.com/inflation-adjusted-s-p-500/table/by-year'],
+         'https://www.multpl.com/inflation-adjusted-s-p-500/table/by-year'],
         [mult_sp500_price_to_book_value, multpl, 'https://www.multpl.com/s-p-500-price-to-book/table/by-year'],
         [mult_sp500_price_to_sales_ratio, multpl, 'https://www.multpl.com/s-p-500-price-to-sales/table/by-quarter'],
         [mult_sp500_shiller_pe_10_ratio, multpl, 'https://www.multpl.com/shiller-pe/table/by-month'],
@@ -137,8 +165,11 @@ class MyData:
         [mult_trate_30_year, multpl, 'https://www.multpl.com/30-year-treasury-rate/table/by-month'],
         [mult_trate_5_year, multpl, 'https://www.multpl.com/5-year-treasury-rate/table/by-month'],
         [mult_trate_6_month, multpl, 'https://www.multpl.com/6-month-treasury-rate/table/by-month'],
+
         # for computed ids the url is a list of dependencies (i.e. a list of data series ids)
         [sp500_div_reinvest_month, compute, [sp500_real_price_month, sp500_div_yield_month]],
         [sp500_earnings_growth, compute, [sp500_pe_ratio_month, sp500_real_price_month]],
-        [sp500_earnings_yield, compute, [sp500_pe_ratio_month, sp500_real_price_month]]
+        [sp500_earnings_yield, compute, [sp500_pe_ratio_month, sp500_real_price_month]],
+        [yahoo_spy_div_reinvest, compute, [yahoo_spy_close, yahoo_spy_div, yahoo_spy_cap]]
+
     ]
